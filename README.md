@@ -1,7 +1,7 @@
 
 ---
 
-# LightGBM Feature Selection Project
+# Feature Selection with Mask Vector Project
 
 ## Overview
 
