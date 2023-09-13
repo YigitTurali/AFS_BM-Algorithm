@@ -1,12 +1,13 @@
 import random
-import numpy as np
-import torch
+import warnings
+
 import lightgbm as lgb
 import matplotlib as plt
+import numpy as np
 import plotly.graph_objects as go
+import torch
 from sklearn.metrics import classification_report, accuracy_score, log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
-import warnings
 
 # Suppress warnings
 warnings.filterwarnings("ignore")
@@ -33,6 +34,7 @@ def set_random_seeds(seed):
 
 class MaskedEarlyStopping:
     """Early stopping mechanism that uses a mask."""
+
     def __init__(self, patience=5, delta=0, patience_no_change=5):
         self.patience = patience
         self.delta = delta
@@ -65,6 +67,7 @@ class MaskedEarlyStopping:
 
 class Feature_Selector_LGBM:
     """Feature selection using LightGBM."""
+
     def __init__(self, params, param_grid, X_train, X_val, X_val_mask, X_test, y_train, y_val, y_val_mask, y_test,
                  data_type):
         self.params = params
@@ -90,7 +93,6 @@ class Feature_Selector_LGBM:
 
     def fit_network(self):
         """Fit the LightGBM model and perform feature selection."""
-        set_random_seeds(88)
         mask_cache = []
         train_loss_cache = []
         mask_loss_cache = []
@@ -209,11 +211,23 @@ class Feature_Selector_LGBM:
                                    yaxis_title="Normalized Loss")
                 fig = go.Figure(data=[trace], layout=layout)
                 fig.show()
+                self.LGBM_Selector = LightGBM_Selector
                 break
+
+    def Test_Network(self):
+        y_preds = self.model.predict_proba(self.LGBM_Selector.X_test)
+        y_hat = self.model.predict(self.LGBM_Selector.X_test)
+        test_loss = self.criterion(y_preds, self.LGBM_Selector.y_test)
+        print(f"Final Mask Loss:{test_loss.item()}")
+        print(classification_report(self.LGBM_Selector.y_test, y_hat, target_names=["0", "1"]))
+        print(f"Accuracy {accuracy_score(self.LGBM_Selector.y_test, y_hat)}")
+
+        return test_loss.item()
 
 
 class LightGBM_Model:
     """Wrapper for LightGBM model with utility functions."""
+
     def __init__(self, params, param_grid, X_train, X_val, X_val_mask, X_test, y_train, y_val, y_val_mask, y_test,
                  data_type):
         # Initialization with dataset and parameters
@@ -267,9 +281,8 @@ class LightGBM_Model:
 
     def Train_with_GridSearch(self):
         """Train the model using grid search for hyperparameter optimization."""
-        grid_search = GridSearchCV(self.base_model, param_grid=self.param_grid, cv=5, verbose=-1, n_jobs=-1,
-                                   early_stopping_rounds=10)
-        grid_search.fit(self.X_train_val, self.masked_y_train_val)
+        grid_search = GridSearchCV(self.base_model, param_grid=self.param_grid, cv=5, verbose=-1, n_jobs=-1)
+        grid_search.fit(self.masked_X_train, self.masked_y_train)
         self.best_params = grid_search.best_params_
         self.searched_trained_model = grid_search.best_estimator_
 
