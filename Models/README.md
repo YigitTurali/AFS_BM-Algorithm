@@ -1,89 +1,59 @@
+# Feature Selector Models Documentation
+
+## Table of Contents
+1. [Feature Selector with LightGBM](#feature-selector-with-lightgbm)
+2. [Feature Selector with MLP](#feature-selector-with-mlp)
+3. [LightGBM Pipeline](#lightgbm-pipeline)
+4. [MLP Pipeline](#mlp-pipeline)
+5. [XGBoost Pipeline](#xgboost-pipeline)
 
 ---
 
-# Documentation
+### Feature Selector with LightGBM
+- **File**: `Feature_Selector_LightGBM.py`
+- **Description**: This file contains the implementation of feature selection using the LightGBM model.
 
-## Overview
-
-This module provides tools for setting random seeds across multiple libraries, implementing early stopping with masks, and performing feature selection using LightGBM. It also includes a wrapper for the LightGBM model with utility functions.
-
-## Functions
-
-### `set_random_seeds(seed)`
-
-**Description:**
-Sets the random seed for reproducibility across different libraries.
-
-**Parameters:**
-- `seed`: The seed value to set for all random number generators.
-
-**Returns:**
-None. Prints a message indicating that the seeds have been set.
+#### Key Functions:
+- `feature_selector_lightgbm()`: A function to perform feature selection using LightGBM.
 
 ---
 
-## Classes
+### Feature Selector with MLP
+- **File**: `Feature_Selector_MLP.py`
+- **Description**: This file contains the implementation of feature selection using the MLP model.
 
-### `MaskedEarlyStopping`
-
-**Description:**
-Implements an early stopping mechanism that uses a mask.
-
-**Attributes:**
-- `patience`: Number of epochs with no improvement after which training will be stopped.
-- `delta`: Minimum change in the monitored quantity to qualify as an improvement.
-- `patience_no_change`: Number of epochs with no change in the mask after which training will be stopped.
-- `counter`: Counter for the number of epochs with no improvement.
-- `best_score`: Best score achieved so far.
-- `early_stop`: Boolean indicating if early stopping should be executed.
-- `prev_val_loss`: Previous validation loss.
-- `losses`: List to store the losses.
-
-**Methods:**
-- `__call__(mask, loss)`: Checks for early stopping criteria.
+#### Key Functions:
+- `feature_selector_mlp()`: A function to perform feature selection using MLP.
 
 ---
 
-### `Feature_Selector_LGBM`
+### LightGBM Pipeline
+- **File**: `LightGBM_Pipeline.py`
+- **Description**: This file contains the pipeline for the LightGBM model.
 
-**Description:**
-Performs feature selection using LightGBM.
-
-**Attributes:**
-- `params`: Parameters for the LightGBM model.
-- `param_grid`: Grid of parameters for hyperparameter tuning.
-- `X_train`, `X_val`, `X_val_mask`, `X_test`: Feature datasets.
-- `y_train`, `y_val`, `y_val_mask`, `y_test`: Target datasets.
-- `data_type`: Type of data ("Classification" or "Regression").
-- `num_of_features`: Number of features in the training dataset.
-- `mask`: Initial mask for feature selection.
-
-**Methods:**
-- `fit_network()`: Fits the LightGBM model and performs feature selection.
+#### Key Functions:
+- `lightgbm_pipeline()`: A function to create and execute the LightGBM pipeline.
 
 ---
 
-### `LightGBM_Model`
+### MLP Pipeline
+- **File**: `MLP_Pipeline.py`
+- **Description**: This file contains the pipeline for the MLP model.
 
-**Description:**
-Wrapper for the LightGBM model with utility functions.
-
-**Attributes:**
-- `params`: Parameters for the LightGBM model.
-- `param_grid`: Grid of parameters for hyperparameter tuning.
-- `X_train`, `X_val`, `X_val_mask`, `X_test`: Feature datasets.
-- `y_train`, `y_val`, `y_val_mask`, `y_test`: Target datasets.
-- `data_type`: Type of data ("Classification" or "Regression").
-- `mask`: Initial mask for feature selection.
-
-**Methods:**
-- `create_masked_datasets()`: Creates datasets using the current mask.
-- `Train_with_RandomSearch()`: Trains the model using random search for hyperparameter optimization.
-- `Train_with_GridSearch()`: Trains the model using grid search for hyperparameter optimization.
-- `cross_entropy(preds, labels)`: Computes cross entropy loss.
-- `mean_squared_error(preds, labels)`: Computes mean squared error.
+#### Key Functions:
+- `mlp_pipeline()`: A function to create and execute the MLP pipeline.
 
 ---
 
-**Note:**
-This documentation provides a brief overview of the functions and classes in the module. For a more in-depth understanding, it's recommended to review the code and comments within the module.
+### XGBoost Pipeline
+- **File**: `XGBoost_Pipeline.py`
+- **Description**: This file contains the pipeline for the XGBoost model.
+
+#### Key Functions:
+- `xgboost_pipeline()`: A function to create and execute the XGBoost pipeline.
+
+---
+
+This documentation provides a brief overview of each file in the "Models" directory. For detailed implementation and usage, please refer to the respective files.
+
+Note: The descriptions and function names provided are based on the file names and the content structure. It's recommended to review the actual files for a comprehensive understanding.

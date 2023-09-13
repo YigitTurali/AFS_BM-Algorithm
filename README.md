@@ -1,47 +1,38 @@
+# Feature Selector
 
----
+Feature Selector is a Python tool that provides various methods to select important features from your dataset. The main goal is to improve the performance of your machine learning models by selecting the most relevant features.
 
-# Feature Selection with Mask Vector Project
+## Features
 
-## Overview
+- **Dataset Picker**: A utility to help you pick and load datasets.
+- **Data Loaders**: Custom data loaders for classification and time series data.
+  - `classification_dataloader.py`: For loading classification datasets.
+  - `time_series_dataloader.py`: For loading time series datasets.
+  - `m4_feature_extractor.py`: Extracts features from the M4 dataset.
+- **Models**: Implementations of different machine learning models and pipelines.
+  - `Feature_Selector_LightGBM.py`: Feature selection using LightGBM.
+  - `Feature_Selector_MLP.py`: Feature selection using MLP.
+  - `LightGBM_Pipeline.py`: A pipeline for LightGBM.
+  - `MLP_Pipeline.py`: A pipeline for MLP.
+  - `XGBoost_Pipeline.py`: A pipeline for XGBoost.
+- **Runners**: Scripts to run the feature selector models.
+  - `LightGBM_Feature_Selector_Runner.py`: Runner for the LightGBM feature selector.
+  - `MLP_Feature_Selector_Runner.py`: Runner for the MLP feature selector.
 
-This project provides a comprehensive toolset for feature selection using LightGBM, a gradient boosting framework that uses tree-based learning algorithms. The primary goal is to improve model performance by selecting the most relevant features and discarding the redundant ones. The project also includes utilities for setting random seeds across multiple libraries and implementing early stopping with masks.
+## Installation
 
-## Key Features
-
-1. **Random Seed Setter**: Ensures reproducibility across different libraries such as NumPy, Python's built-in random module, and PyTorch.
-2. **Masked Early Stopping**: An early stopping mechanism that uses a mask to determine when to halt the training process.
-3. **Feature Selection with LightGBM**: Uses LightGBM to rank and select the most relevant features for the model.
-4. **LightGBM Model Wrapper**: A utility wrapper around the LightGBM model, providing functions for training with both random search and grid search hyperparameter optimization.
-
-## Dependencies
-
-- `random`
-- `numpy`
-- `torch`
-- `lightgbm`
-- `matplotlib`
-- `plotly`
-- `sklearn`
+1. Clone the repository:
+git clone https://github.com/YigitTurali/Feature_Selector.git
+2. Navigate to the repository directory:
+cd Feature_Selector
+3. Install the required packages:
+pip install -r requirements.txt
 
 ## Usage
 
-1. **Setting Random Seeds**:
-   ```python
-   set_random_seeds(42)
-   ```
-
-2. **Feature Selection**:
-   ```python
-   selector = Feature_Selector_LGBM(params, param_grid, X_train, X_val, X_val_mask, X_test, y_train, y_val, y_val_mask, y_test, data_type="Classification")
-   selector.fit_network()
-   ```
-
-3. **Training with LightGBM Wrapper**:
-   ```python
-   model = LightGBM_Model(params, param_grid, X_train, X_val, X_val_mask, X_test, y_train, y_val, y_val_mask, y_test, data_type="Classification")
-   model.Train_with_RandomSearch()
-   ```
+1. Load your dataset using the appropriate data loader from the `DataLoaders` directory.
+2. Choose the model or pipeline you want to use from the `Models` directory.
+3. Run the corresponding runner script from the root directory to start the feature selection process.
 
 ## Contributing
 
@@ -49,7 +40,4 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 ## License
 
-[MIT](LICENSE)
-
----
-
+This project is licensed under the MIT License.
