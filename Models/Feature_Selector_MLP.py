@@ -7,8 +7,8 @@ import torch
 import torch.nn as nn
 from sklearn.metrics import classification_report, accuracy_score
 
-from Feature_Selector.DataLoaders.Dataset_Picker import Create_Dataset
-from Feature_Selector.DataLoaders.classification_dataloader import TorchDataset
+from DataLoaders.Dataset_Picker import Create_Dataset
+from DataLoaders.classification_dataloader import TorchDataset
 
 # Suppress warnings
 warnings.filterwarnings("ignore")
