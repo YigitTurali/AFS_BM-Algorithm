@@ -223,12 +223,12 @@ class Feature_Selector_XGB:
             early_stopping(XGBoost_Selector.mask, final_mask_loss.item())
             if early_stopping.early_stop:
                 print("Optimization Process Have Stopped!!!")
-                trace = go.Scatter(x=np.arange(full_loss_cache.__len__()),
-                                   y=full_loss_cache, mode="lines")
-                layout = go.Layout(title="Feature Selection Layer Normalized Loss", xaxis_title="Loss Index",
-                                   yaxis_title="Normalized Loss")
-                fig = go.Figure(data=[trace], layout=layout)
-                fig.show()
+                # trace = go.Scatter(x=np.arange(full_loss_cache.__len__()),
+                #                    y=full_loss_cache, mode="lines")
+                # layout = go.Layout(title="Feature Selection Layer Normalized Loss", xaxis_title="Loss Index",
+                #                    yaxis_title="Normalized Loss")
+                # fig = go.Figure(data=[trace], layout=layout)
+                # fig.show()
                 self.xgbM_Selector = XGBoost_Selector
                 break
 
