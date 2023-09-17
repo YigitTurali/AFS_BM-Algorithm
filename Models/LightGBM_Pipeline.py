@@ -53,8 +53,12 @@ class Baseline_LightGBM_Model:
 
     def Test_Network(self):
         """Test the trained model."""
-        self.y_pred = self.searched_trained_model.predict_proba(self.X_test)
+        if self.data_type == "Classification":
+            self.y_pred = self.searched_trained_model.predict_proba(self.X_test)
+        else:
+            self.y_pred = self.searched_trained_model.predict(self.X_test)
         self.loss = self.criterion(self.y_pred, self.y_test)
+        print(f"Test Loss for Baseline LGBM: {self.loss}")
         return self.loss
 
     @staticmethod

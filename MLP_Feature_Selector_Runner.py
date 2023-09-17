@@ -1,13 +1,13 @@
 import argparse
 import logging
-import torch
+
 import pandas as pd
+import torch
+from DataLoaders.Dataset_Picker import Create_Dataset
+from DataLoaders.time_series_dataloader import TimeSeriesDataset
+from Models.Feature_Selector_MLP import Feature_Selector_MLP
 
-from Feature_Selector.DataLoaders.Dataset_Picker import Create_Dataset
-from Feature_Selector.DataLoaders.time_series_dataloader import TimeSeriesDataset
-from Feature_Selector.Models.Feature_Selector_MLP import Feature_Selector_MLP
 from Models.MLP_Pipeline import MLP_Baseline_Pipeline
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_name", type=str, default="statlog_aca", help="Dataset name")
@@ -34,9 +34,10 @@ if __name__ == '__main__':
         # Baseline LGBM Model
         X_train = pd.concat([X_train, X_val_mask], axis=0)
         y_train = pd.concat([y_train, y_val_mask], axis=0)
-        baseline_network_mlp = MLP_Baseline_Pipeline(X_train=X_train, X_test=X_test, y_train=y_train, y_val=y_val, y_test=y_test,
-                                                  dropout=0.6, input_size=20, hidden_size=10,output_size=1, lr=0.01,
-                                                  epochs=15,device=device, train_type='classification')
+        baseline_network_mlp = MLP_Baseline_Pipeline(X_train=X_train, X_test=X_test, y_train=y_train, y_val=y_val,
+                                                     y_test=y_test,
+                                                     dropout=0.6, input_size=20, hidden_size=10, output_size=1, lr=0.01,
+                                                     epochs=15, device=device, train_type='classification')
 
         baseline_network_mlp.fit_network()
         test_baseline_mlp = baseline_network_mlp.test_baseline_mlp()

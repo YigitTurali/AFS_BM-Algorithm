@@ -20,13 +20,13 @@ class Baseline_XgBoost_Model:
         self.data_type = data_type
 
         if data_type == "Classification":
-            self.base_model = xgb.XGBClassifier(**self.params)
+            self.base_model = xgb.XGBClassifier(**self.params,device="cuda",tree_method="gpu_hist")
             self.params["eval_metric"] = ["logloss"]
             self.params["objective"] = ["binary"]
             self.criterion = self.cross_entropy
 
         else:
-            self.base_model = xgb.XGBRegressor(**self.params)
+            self.base_model = xgb.XGBRegressor(**self.params,device="cuda",tree_method="gpu_hist")
             self.params["eval_metric"] = ["l2"]
             self.params["objective"] = ["regression"]
             self.criterion = self.mean_squared_error
@@ -34,23 +34,27 @@ class Baseline_XgBoost_Model:
     def Train_with_RandomSearch(self):
         """Train the model using random search for hyperparameter optimization."""
 
-        random_search = RandomizedSearchCV(self.base_model, param_distributions=self.param_grid, n_iter=100, cv=5,
+        random_search = RandomizedSearchCV(self.base_model, param_distributions=self.param_grid, n_iter=15, cv=5,
                                            verbose=-1, n_jobs=-1)
-        random_search.fit(self.X_train, self.y_train, eval_set=(self.X_val, self.y_val))
+        random_search.fit(self.X_train, self.y_train, eval_set=[(self.X_val, self.y_val)], verbose=False)
         self.best_params = random_search.best_params_
         self.searched_trained_model = random_search.best_estimator_
 
     def Train_with_GridSearch(self):
         """Train the model using grid search for hyperparameter optimization."""
         grid_search = GridSearchCV(self.base_model, param_grid=self.param_grid, cv=5, verbose=-1, n_jobs=-1)
-        grid_search.fit(self.X_train, self.y_train, eval_set=(self.X_val, self.y_val))
+        grid_search.fit(self.X_train, self.y_train, eval_set=[(self.X_val, self.y_val)], verbose=False)
         self.best_params = grid_search.best_params_
         self.searched_trained_model = grid_search.best_estimator_
 
     def Test_Network(self):
         """Test the trained model."""
-        self.y_pred = self.searched_trained_model.predict_proba(self.X_test)
+        if self.data_type == "Classification":
+            self.y_pred = self.searched_trained_model.predict_proba(self.X_test)
+        else:
+            self.y_pred = self.searched_trained_model.predict(self.X_test)
         self.loss = self.criterion(self.y_pred, self.y_test)
+        print("Test Loss for Baseline XGBoost: ", self.loss)
         return self.loss
 
     @staticmethod

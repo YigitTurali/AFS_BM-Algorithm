@@ -1,7 +1,8 @@
-import pandas as pd
-import numpy as np
-import os
 import random
+
+import numpy as np
+import pandas as pd
+import os
 
 def give_indexes(df_train):
     data_arr = df_train.iloc[:, 1:].values
@@ -82,6 +83,7 @@ def feature_extractor(data):
     data.index = np.arange(len(data))
     return data
 
+
 reproduciblity = True
 if reproduciblity:
     random.seed(888)
@@ -89,7 +91,7 @@ if reproduciblity:
 m4s = ["Daily", "Hourly", "Weekly"]
 M4_TYPE = m4s[2]
 
-working_dir = "/home/b023/PycharmProjects/Feature_Selector_Paper"
+working_dir = os.getcwd()
 df_train = pd.read_csv(f"{working_dir}/Datasets/M4_Dataset/{M4_TYPE}-train.csv")
 df_test = pd.read_csv(f"{working_dir}/Datasets/M4_Dataset/{M4_TYPE}-test.csv")
 
@@ -99,10 +101,10 @@ for i, ts in enumerate(data_arr):
     data_arr[i] = ts[~np.isnan(ts)][None, :]
 
 indexes = give_indexes(df_train)
-randomlist = random.sample(indexes, 354)
+randomlist = random.sample(indexes, len(indexes)) # len(indexes)
 
-train_series = df_train.iloc[randomlist,:]
-test_series = df_test.iloc[randomlist,:]
+train_series = df_train.iloc[randomlist, :]
+test_series = df_test.iloc[randomlist, :]
 
 for data_i in range(len(train_series)):
     Xdf = train_series.iloc[data_i]
@@ -110,9 +112,9 @@ for data_i in range(len(train_series)):
     Xdf = Xdf.iloc[1:]
     ydf = test_series.iloc[data_i]
     ydf = ydf.iloc[1:]
-    df = pd.concat([Xdf,ydf])
+    df = pd.concat([Xdf, ydf])
     data = pd.DataFrame({"y": df})
     data.index = np.arange(len(data))
     data = feature_extractor(data)
     print(f"{data_i} shape of new data {data.shape}")
-    data.to_csv(f"{working_dir}/Datasets/Extracted_M4/{data_i}_M4_{M4_TYPE}.csv")
+    data.to_csv(f"{working_dir}/Datasets/Extracted_M4/{data_i}_M4_{M4_TYPE}.csv",index=False)

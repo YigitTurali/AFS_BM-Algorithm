@@ -2,7 +2,7 @@ import random
 import warnings
 
 import lightgbm as lgb
-import matplotlib as plt
+import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 import torch
@@ -111,15 +111,22 @@ class Feature_Selector_LGBM:
         early_stopping = MaskedEarlyStopping(patience=5, delta=0.001)
         while True:
             LightGBM_Selector.create_masked_datasets()
-            self.criterion = LightGBM_Selector.cross_entropy
+            if self.data_type == "Classification":
+                self.criterion = LightGBM_Selector.cross_entropy
+            else:
+                self.criterion = LightGBM_Selector.mean_squared_error
 
             # Train the model
             LightGBM_Selector.Train_with_RandomSearch()
             self.model = LightGBM_Selector.searched_trained_model
-            lgb.plot_importance(self.model, importance_type='gain', figsize=(10, 10))
-            plt.show()
+            # lgb.plot_importance(self.model, importance_type='gain', figsize=(10, 10))
+            # plt.show()
             # Get the validation loss
-            y_hat_after_train = self.model.predict_proba(LightGBM_Selector.masked_X_val)
+            if self.data_type == "Classification":
+                y_hat_after_train = self.model.predict_proba(LightGBM_Selector.masked_X_val)
+            else:
+                y_hat_after_train = self.model.predict(LightGBM_Selector.masked_X_val)
+
             loss_after_train = self.criterion(y_hat_after_train, LightGBM_Selector.masked_y_val)
             # Update the training iteration
             train_loss_cache.append(loss_after_train.item())
@@ -129,7 +136,11 @@ class Feature_Selector_LGBM:
 
             # Get the validation loss
             LightGBM_Selector.create_masked_datasets()
-            y_hat_before_mask_optim = self.model.predict_proba(LightGBM_Selector.masked_X_mask_val)
+            if self.data_type == "Classification":
+                y_hat_before_mask_optim = self.model.predict_proba(LightGBM_Selector.masked_X_mask_val)
+            else:
+                y_hat_before_mask_optim = self.model.predict(LightGBM_Selector.masked_X_mask_val)
+
             loss_before_mask_optim = self.criterion(y_hat_before_mask_optim, LightGBM_Selector.masked_y_mask_val)
             mask_loss_cache.append(loss_before_mask_optim.item())
             print('Current Mask Loss: {:.6f}'.format(loss_before_mask_optim.item()))
@@ -147,14 +158,17 @@ class Feature_Selector_LGBM:
                     # Mask Optimization
                     LightGBM_Selector.mask[random_idx] = 0
                     LightGBM_Selector.create_masked_datasets()
-                    y_hat_current_mask = self.model.predict_proba(LightGBM_Selector.masked_X_mask_val)
+                    if self.data_type == "Classification":
+                        y_hat_current_mask = self.model.predict_proba(LightGBM_Selector.masked_X_mask_val)
+                    else:
+                        y_hat_current_mask = self.model.predict(LightGBM_Selector.masked_X_mask_val)
                     current_mask_loss = self.criterion(y_hat_current_mask, LightGBM_Selector.masked_y_mask_val)
                     mask_loss_cache.append(current_mask_loss.item())
                     print(f'Mask Optimization Loss for mask {LightGBM_Selector.mask}: {current_mask_loss.item()}')
                     # Check if the mask loss is greater than the previous mask loss or if the mask loss is greater than
                     # the previous mask loss by a certain threshold
-                    if (mask_loss_cache[-1] - mask_loss_cache[-2]) / mask_loss_cache[-2] > 0.02 or \
-                        (mask_loss_cache[-1] - mask_loss_cache[0]) / mask_loss_cache[0] > 0.02:
+                    if (mask_loss_cache[-1] - mask_loss_cache[-2]) / mask_loss_cache[-2] > 0.01 or \
+                            (mask_loss_cache[-1] - mask_loss_cache[0]) / mask_loss_cache[0] > 0.01:
                         LightGBM_Selector.mask[random_idx] = 1
                         mask_loss_cache.pop()
                         mask_optim_patience += 1
@@ -170,26 +184,32 @@ class Feature_Selector_LGBM:
             print(f"Eliminated Features: {zero_columns}")
             print("Mask for iteration {} is: {}".format(iter, LightGBM_Selector.mask))
 
-            if training_iter % 5 == 0:
-                trace = go.Scatter(x=np.arange(full_loss_cache.__len__()),
-                                   y=full_loss_cache, mode="lines")
-                layout = go.Layout(title="Feature Selection Layer Normalized Loss", xaxis_title="Loss Index",
-                                   yaxis_title="Normalized Loss")
-                fig = go.Figure(data=[trace], layout=layout)
-                fig.show()
+            # trace = go.Scatter(x=np.arange(full_loss_cache.__len__()),
+            #                    y=full_loss_cache, mode="lines")
+            # layout = go.Layout(title="Feature Selection Layer Normalized Loss", xaxis_title="Loss Index",
+            #                    yaxis_title="Normalized Loss")
+            # fig = go.Figure(data=[trace], layout=layout)
+            # fig.show()
 
             # Evaluate the model
             X_eval_set = np.concatenate([LightGBM_Selector.X_val, LightGBM_Selector.X_val_mask], axis=0)
             y_full_eval = np.concatenate([LightGBM_Selector.y_val, LightGBM_Selector.y_val_mask], axis=0)
-            y_hat = self.model.predict_proba(X_eval_set)
-            y_preds = self.model.predict(X_eval_set)
-            # Get the final loss
-            final_mask_loss = self.criterion(y_hat, y_full_eval)
-            final_loss_cache.append(final_mask_loss.item())
+            if self.data_type == "Classification":
+                y_hat = self.model.predict_proba(X_eval_set)
+                y_preds = self.model.predict(X_eval_set)
+                # Get the final loss
+                final_mask_loss = self.criterion(y_hat, y_full_eval)
+                final_loss_cache.append(final_mask_loss.item())
 
-            print(f"Final Mask Loss:{final_mask_loss.item()}")
-            print(classification_report(y_full_eval, y_preds, target_names=["0", "1"]))
-            print(f"Accuracy {accuracy_score(y_full_eval, y_preds)}")
+                print(f"Final Mask Loss:{final_mask_loss.item()}")
+                print(classification_report(y_full_eval, y_preds, target_names=["0", "1"]))
+                print(f"Accuracy {accuracy_score(y_full_eval, y_preds)}")
+            else:
+                y_hat = self.model.predict(X_eval_set)
+                # Get the final loss
+                final_mask_loss = self.criterion(y_hat, y_full_eval)
+                final_loss_cache.append(final_mask_loss.item())
+                print(f"Final Mask Loss:{final_mask_loss.item()}")
 
             # Update the datasets
             LightGBM_Selector.mask = np.delete(LightGBM_Selector.mask, zero_columns)
@@ -204,7 +224,6 @@ class Feature_Selector_LGBM:
             early_stopping(LightGBM_Selector.mask, final_mask_loss.item())
             if early_stopping.early_stop:
                 print("Optimization Process Have Stopped!!!")
-                full_loss_cache += early_stopping.losses
                 trace = go.Scatter(x=np.arange(full_loss_cache.__len__()),
                                    y=full_loss_cache, mode="lines")
                 layout = go.Layout(title="Feature Selection Layer Normalized Loss", xaxis_title="Loss Index",
@@ -215,12 +234,18 @@ class Feature_Selector_LGBM:
                 break
 
     def Test_Network(self):
-        y_preds = self.model.predict_proba(self.LGBM_Selector.X_test)
-        y_hat = self.model.predict(self.LGBM_Selector.X_test)
-        test_loss = self.criterion(y_preds, self.LGBM_Selector.y_test)
-        print(f"Final Mask Loss:{test_loss.item()}")
-        print(classification_report(self.LGBM_Selector.y_test, y_hat, target_names=["0", "1"]))
-        print(f"Accuracy {accuracy_score(self.LGBM_Selector.y_test, y_hat)}")
+        if self.data_type == "Classification":
+            y_preds = self.model.predict_proba(self.LGBM_Selector.X_test)
+            y_hat = self.model.predict(self.LGBM_Selector.X_test)
+            test_loss = self.criterion(y_preds, self.LGBM_Selector.y_test)
+            print(f"Final Mask Loss:{test_loss.item()}")
+            print(classification_report(self.LGBM_Selector.y_test, y_hat, target_names=["0", "1"]))
+            print(f"Accuracy {accuracy_score(self.LGBM_Selector.y_test, y_hat)}")
+
+        else:
+            y_preds = self.model.predict(self.LGBM_Selector.X_test)
+            test_loss = self.criterion(y_preds, self.LGBM_Selector.y_test)
+            print(f"Final Test Loss:{test_loss.item()}")
 
         return test_loss.item()
 

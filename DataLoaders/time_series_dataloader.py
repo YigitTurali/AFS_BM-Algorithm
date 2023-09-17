@@ -1,5 +1,6 @@
 from torch.utils.data import Dataset
 
+
 class TimeSeriesDataset(Dataset):
     def __init__(self, data_dict):
         """
@@ -22,13 +23,12 @@ class TimeSeriesDataset(Dataset):
 
     def __getitem__(self, idx):
         X_train = self.X_train[idx]
-        y_train = self.y_train[idx]
+        y_train = self.y_train[idx].values
         X_val = self.X_val[idx]
-        y_val = self.y_val[idx]
+        y_val = self.y_val[idx].values
         X_val_mask = self.X_val_mask[idx]
-        y_val_mask = self.y_val_mask[idx]
+        y_val_mask = self.y_val_mask[idx].values
         X_test = self.X_test[idx]
-        y_test = self.y_test[idx]
+        y_test = self.y_test[idx].values
 
         return X_train, y_train, X_val, y_val, X_val_mask, y_val_mask, X_test, y_test
-
