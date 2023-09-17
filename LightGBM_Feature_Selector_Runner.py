@@ -210,11 +210,12 @@ if __name__ == '__main__':
                 data_type="Regression")
             baseline_network_xgboost.Train_with_RandomSearch()
             test_xgboost_baseline_loss.append(baseline_network_xgboost.Test_Network())
-
+            print("---------------------------------------------------------------------------------------------")
             print("Test Loss for Feature Selector LGBM: ", test_fs_lgbm_model_loss[-1])
             print("Test Loss for Feature Selector XGBoost: ", test_fs_xgb_model_loss[-1])
             print("Test Loss for Baseline LGBM: ", test_lgbm_baseline_loss[-1])
             print("Test Loss for Baseline XGBoost: ", test_xgboost_baseline_loss[-1])
+            print("---------------------------------------------------------------------------------------------")
 
         np.save("Results/TimeSeries/test_fs_lgbm_model_loss.npy", np.asarray(test_fs_lgbm_model_loss))
         np.save("Results/TimeSeries/test_fs_xgb_model_loss.npy", np.asarray(test_fs_xgb_model_loss))

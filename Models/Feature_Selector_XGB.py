@@ -212,10 +212,10 @@ class Feature_Selector_XGB:
 
             # Update the datasets
             XGBoost_Selector.mask = np.delete(XGBoost_Selector.mask, zero_columns)
-            XGBoost_Selector.X_train = np.delete(XGBoost_Selector.X_train, zero_columns, axis=1)
-            XGBoost_Selector.X_val = np.delete(XGBoost_Selector.X_val, zero_columns, axis=1)
-            XGBoost_Selector.X_val_mask = np.delete(XGBoost_Selector.X_val_mask, zero_columns, axis=1)
-            XGBoost_Selector.X_test = np.delete(XGBoost_Selector.X_test, zero_columns, axis=1)
+            XGBoost_Selector.X_train = np.delete(np.asarray(XGBoost_Selector.X_train), zero_columns, axis=1)
+            XGBoost_Selector.X_val = np.delete(np.asarray(XGBoost_Selector.X_val), zero_columns, axis=1)
+            XGBoost_Selector.X_val_mask = np.delete(np.asarray(XGBoost_Selector.X_val_mask), zero_columns, axis=1)
+            XGBoost_Selector.X_test = np.delete(np.asarray(XGBoost_Selector.X_test), zero_columns, axis=1)
             # Update the number of features
             self.num_of_features -= len(zero_columns)
             iter += 1
@@ -223,12 +223,12 @@ class Feature_Selector_XGB:
             early_stopping(XGBoost_Selector.mask, final_mask_loss.item())
             if early_stopping.early_stop:
                 print("Optimization Process Have Stopped!!!")
-                trace = go.Scatter(x=np.arange(full_loss_cache.__len__()),
-                                   y=full_loss_cache, mode="lines")
-                layout = go.Layout(title="Feature Selection Layer Normalized Loss", xaxis_title="Loss Index",
-                                   yaxis_title="Normalized Loss")
-                fig = go.Figure(data=[trace], layout=layout)
-                fig.show()
+                # trace = go.Scatter(x=np.arange(full_loss_cache.__len__()),
+                #                    y=full_loss_cache, mode="lines")
+                # layout = go.Layout(title="Feature Selection Layer Normalized Loss", xaxis_title="Loss Index",
+                #                    yaxis_title="Normalized Loss")
+                # fig = go.Figure(data=[trace], layout=layout)
+                # fig.show()
                 self.xgbM_Selector = XGBoost_Selector
                 break
 

@@ -89,7 +89,7 @@ if reproduciblity:
     random.seed(888)
 
 m4s = ["Daily", "Hourly", "Weekly"]
-M4_TYPE = m4s[2]
+M4_TYPE = m4s[0]
 
 working_dir = os.getcwd()
 df_train = pd.read_csv(f"{working_dir}/Datasets/M4_Dataset/{M4_TYPE}-train.csv")
@@ -101,7 +101,7 @@ for i, ts in enumerate(data_arr):
     data_arr[i] = ts[~np.isnan(ts)][None, :]
 
 indexes = give_indexes(df_train)
-randomlist = random.sample(indexes, len(indexes)) # len(indexes)
+randomlist = random.sample(indexes, 500) # len(indexes)
 
 train_series = df_train.iloc[randomlist, :]
 test_series = df_test.iloc[randomlist, :]
