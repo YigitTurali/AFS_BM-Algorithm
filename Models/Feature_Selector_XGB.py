@@ -166,6 +166,8 @@ class Feature_Selector_XGB:
                     print(f'Mask Optimization Loss for mask {XGBoost_Selector.mask}: {current_mask_loss.item()}')
                     # Check if the mask loss is greater than the previous mask loss or if the mask loss is greater than
                     # the previous mask loss by a certain threshold
+                    if mask_loss_cache[-2] == 0:
+                        mask_loss_cache[-2] = 1e-5
                     if (mask_loss_cache[-1] - mask_loss_cache[-2]) / mask_loss_cache[-2] > 0.01 or \
                             (mask_loss_cache[-1] - mask_loss_cache[0]) / mask_loss_cache[0] > 0.01:
                         XGBoost_Selector.mask[random_idx] = 1
@@ -173,6 +175,14 @@ class Feature_Selector_XGB:
                         mask_optim_patience += 1
 
                     else:
+                        if np.sum(XGBoost_Selector.mask) == 0:
+                            print("Mask is all zeros!!!")
+                            XGBoost_Selector.mask[random_idx] = 1
+                            mask_loss_cache.pop()
+                            mask_optim_patience += 1
+                            stop_mask = 1
+                            mask_idx = self.num_of_features
+                            mask_optim_patience = 5
                         full_loss = current_mask_loss.item()
                         full_loss_cache.append(full_loss)
                         mask_cache.append(XGBoost_Selector.mask)
