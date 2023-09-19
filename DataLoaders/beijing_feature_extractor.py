@@ -53,7 +53,7 @@ def feature_extractor(data):
     data.drop(columns=["No", "month", "day", "hour"], inplace=True)
     x = data["pm2.5"]
     data.drop(columns=["pm2.5"], inplace=True)
-    data["pm2.5"] = x
+    data["y"] = x
     return data
 
 
