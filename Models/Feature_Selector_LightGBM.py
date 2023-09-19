@@ -12,7 +12,6 @@ from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 # Suppress warnings
 warnings.filterwarnings("ignore")
 
-
 def set_random_seeds(seed):
     """Set random seed for reproducibility across different libraries."""
     # Set seed for NumPy
@@ -30,7 +29,6 @@ def set_random_seeds(seed):
     # You can add more libraries or functions here, if needed
 
     print(f"Seeds have been set to {seed} for all random number generators.")
-
 
 class MaskedEarlyStopping:
     """Early stopping mechanism that uses a mask."""
@@ -120,6 +118,7 @@ class Feature_Selector_LGBM:
             # Train the model
             LightGBM_Selector.Train_with_RandomSearch()
             self.model = LightGBM_Selector.searched_trained_model
+            self.model = LightGBM_Selector.searched_trained_model
             # lgb.plot_importance(self.model, importance_type='gain', figsize=(10, 10))
             # plt.show()
             # Get the validation loss
@@ -171,8 +170,8 @@ class Feature_Selector_LGBM:
                     if mask_loss_cache[-2] == 0:
                         mask_loss_cache[-2] = 1e-5
 
-                    if (mask_loss_cache[-1] - mask_loss_cache[-2]) / mask_loss_cache[-2] > 0.01 or \
-                            (mask_loss_cache[-1] - mask_loss_cache[0]) / mask_loss_cache[0] > 0.01:
+                    if (mask_loss_cache[-1] - mask_loss_cache[-2]) / mask_loss_cache[-2] > 0.02 or \
+                            (mask_loss_cache[-1] - mask_loss_cache[0]) / mask_loss_cache[0] > 0.02:
                         LightGBM_Selector.mask[random_idx] = 1
                         mask_loss_cache.pop()
                         mask_optim_patience += 1

@@ -18,6 +18,17 @@ class TimeSeriesDataset(Dataset):
         self.X_test = data_dict['X_test']
         self.y_test = data_dict['y_test']
 
+        if type(self.X_train) != list:
+            self.X_train = [self.X_train]
+            self.y_train = [self.y_train]
+            self.X_val = [self.X_val]
+            self.y_val = [self.y_val]
+            self.X_val_mask = [self.X_val_mask]
+            self.y_val_mask = [self.y_val_mask]
+            self.X_test = [self.X_test]
+            self.y_test = [self.y_test]
+
+
     def __len__(self):
         return len(self.X_train)
 

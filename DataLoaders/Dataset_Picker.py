@@ -18,7 +18,7 @@ def Create_Dataset(dataset_name, val_ratio=0.2,
         data = [x for x in os.listdir(data_dir) if data_ext in x]
 
     elif dataset_name == "M4_Houry":
-        data_dir = f"{working_dir}/DataLoaders/DataLoaders/Datasets/Extracted_M4"
+        data_dir = f"{working_dir}/DataLoaders/Datasets/Extracted_M4"
         data_ext = "Hourly"
         data = [x for x in os.listdir(data_dir) if data_ext in x]
 
@@ -38,9 +38,27 @@ def Create_Dataset(dataset_name, val_ratio=0.2,
         scaler = MinMaxScaler()
         data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
 
-    if len(data) > 1:
+    elif dataset_name == "appliances":
+        data_dir = f"{working_dir}/DataLoaders/Datasets/Appliances_Energy_Prediction"
+        data = pd.read_csv(f"{data_dir}/energydata_complete_extracted.csv", index_col=False)
+        scaler = MinMaxScaler()
+        data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
+
+    elif dataset_name == "ise":
+        data_dir = f"{working_dir}/DataLoaders/Datasets/Istanbul_Stock_Exchange"
+        data = pd.read_csv(f"{data_dir}/data_akbilgic_extracted", index_col=False)
+        scaler = MinMaxScaler()
+        data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
+
+    elif dataset_name == "beijing":
+        data_dir = f"{working_dir}/DataLoaders/Datasets/beijing_pm_2.5"
+        data = pd.read_csv(f"{data_dir}/PRSA_data_extracted.csv", index_col=False)
+        scaler = MinMaxScaler()
+        data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
+
+    data_dict = {}
+    if type(data) == list:
         warnings.warn("More than one dataset found")
-        data_dict = {}
         X_train_list = []
         X_val_list = []
         X_val_mask_list = []
@@ -81,10 +99,9 @@ def Create_Dataset(dataset_name, val_ratio=0.2,
         data_dict["y_val_mask"] = y_val_mask_list
         data_dict["y_test"] = y_test_list
 
-        return data_dict
 
     else:
-        X = pd.read_csv(f"{data_dir}/{data[0]}",index_col=False)
+        X = data
         y = X.pop("y")
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=val_ratio + test_ratio + mask_ratio,
@@ -96,4 +113,13 @@ def Create_Dataset(dataset_name, val_ratio=0.2,
                                                                 test_size=mask_ratio / (val_ratio + mask_ratio),
                                                                 random_state=42)
 
-        return X_train, X_val, X_val_mask, X_test, y_train, y_val, y_val_mask, y_test
+        data_dict["X_train"] = X_train
+        data_dict["X_val"] = X_val
+        data_dict["X_val_mask"] = X_val_mask
+        data_dict["X_test"] = X_test
+        data_dict["y_train"] = y_train
+        data_dict["y_val"] = y_val
+        data_dict["y_val_mask"] = y_val_mask
+        data_dict["y_test"] = y_test
+
+    return data_dict
