@@ -226,10 +226,10 @@ class Feature_Selector_LGBM:
 
             # Update the datasets
             LightGBM_Selector.mask = np.delete(LightGBM_Selector.mask, zero_columns)
-            LightGBM_Selector.X_train = np.delete(LightGBM_Selector.X_train, zero_columns, axis=1)
-            LightGBM_Selector.X_val = np.delete(LightGBM_Selector.X_val, zero_columns, axis=1)
-            LightGBM_Selector.X_val_mask = np.delete(LightGBM_Selector.X_val_mask, zero_columns, axis=1)
-            LightGBM_Selector.X_test = np.delete(LightGBM_Selector.X_test, zero_columns, axis=1)
+            LightGBM_Selector.X_train = np.delete(np.asarray(LightGBM_Selector.X_train), zero_columns, axis=1)
+            LightGBM_Selector.X_val = np.delete(np.asarray(LightGBM_Selector.X_val), zero_columns, axis=1)
+            LightGBM_Selector.X_val_mask = np.delete(np.asarray(LightGBM_Selector.X_val_mask), zero_columns, axis=1)
+            LightGBM_Selector.X_test = np.delete(np.asarray(LightGBM_Selector.X_test), zero_columns, axis=1)
             # Update the number of features
             self.num_of_features -= len(zero_columns)
             iter += 1

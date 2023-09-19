@@ -222,10 +222,10 @@ class Feature_Selector_XGB:
 
             # Update the datasets
             XGBoost_Selector.mask = np.delete(XGBoost_Selector.mask, zero_columns)
-            XGBoost_Selector.X_train = np.delete(XGBoost_Selector.X_train, zero_columns, axis=1)
-            XGBoost_Selector.X_val = np.delete(XGBoost_Selector.X_val, zero_columns, axis=1)
-            XGBoost_Selector.X_val_mask = np.delete(XGBoost_Selector.X_val_mask, zero_columns, axis=1)
-            XGBoost_Selector.X_test = np.delete(XGBoost_Selector.X_test, zero_columns, axis=1)
+            XGBoost_Selector.X_train = np.delete(np.asarray(XGBoost_Selector.X_train), zero_columns, axis=1)
+            XGBoost_Selector.X_val = np.delete(np.asarray(XGBoost_Selector.X_val), zero_columns, axis=1)
+            XGBoost_Selector.X_val_mask = np.delete(np.asarray(XGBoost_Selector.X_val_mask), zero_columns, axis=1)
+            XGBoost_Selector.X_test = np.delete(np.asarray(XGBoost_Selector.X_test), zero_columns, axis=1)
             # Update the number of features
             self.num_of_features -= len(zero_columns)
             iter += 1
