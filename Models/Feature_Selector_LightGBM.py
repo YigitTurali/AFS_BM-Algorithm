@@ -310,7 +310,7 @@ class LightGBM_Model:
         self.create_masked_datasets()
 
         random_search = RandomizedSearchCV(self.base_model, param_distributions=self.param_grid, n_iter=100, cv=5,
-                                           verbose=-1, n_jobs=-1)
+                                           verbose=0, n_jobs=-1)
         callbacks = [lgb.early_stopping(10, verbose=0), lgb.log_evaluation(period=0)]
         random_search.fit(self.masked_X_train, self.masked_y_train, eval_set=(self.masked_X_val, self.masked_y_val),
                           callbacks=callbacks)

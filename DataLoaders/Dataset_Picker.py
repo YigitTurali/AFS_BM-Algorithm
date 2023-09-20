@@ -46,13 +46,19 @@ def Create_Dataset(dataset_name, val_ratio=0.2,
 
     elif dataset_name == "ise":
         data_dir = f"{working_dir}/DataLoaders/Datasets/Istanbul_Stock_Exchange"
-        data = pd.read_csv(f"{data_dir}/data_akbilgic_extracted", index_col=False)
+        data = pd.read_csv(f"{data_dir}/data_akbilgic_extracted.csv", index_col=False)
         scaler = MinMaxScaler()
         data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
 
     elif dataset_name == "beijing":
         data_dir = f"{working_dir}/DataLoaders/Datasets/beijing_pm_2.5"
         data = pd.read_csv(f"{data_dir}/PRSA_data_extracted.csv", index_col=False)
+        scaler = MinMaxScaler()
+        data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
+
+    elif dataset_name == "air_quality":
+        data_dir = f"{working_dir}/DataLoaders/Datasets/Air_Quality_Prediction"
+        data = pd.read_csv(f"{data_dir}/AirQualityUCI_extracted.csv", index_col=False)
         scaler = MinMaxScaler()
         data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
 

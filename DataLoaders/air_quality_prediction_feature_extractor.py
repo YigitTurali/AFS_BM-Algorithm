@@ -49,7 +49,7 @@ def feature_extractor(data):
 
     x = data["RH"]
     data.drop(columns=["RH"], inplace=True)
-    data["RH"] = x
+    data["y"] = x
     return data
 
 

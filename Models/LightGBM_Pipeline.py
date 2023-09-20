@@ -35,7 +35,7 @@ class Baseline_LightGBM_Model:
         """Train the model using random search for hyperparameter optimization."""
 
         random_search = RandomizedSearchCV(self.base_model, param_distributions=self.param_grid, n_iter=100, cv=5,
-                                           verbose=-1, n_jobs=-1)
+                                           verbose=0, n_jobs=-1)
         callbacks = [lgb.early_stopping(10, verbose=0), lgb.log_evaluation(period=0)]
         random_search.fit(self.X_train, self.y_train, eval_set=(self.X_val, self.y_val),
                           callbacks=callbacks)

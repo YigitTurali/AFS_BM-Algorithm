@@ -59,7 +59,7 @@ def feature_extractor(data):
 
 working_dir = os.getcwd()
 data = pd.read_csv(
-    f"/home/b023/PycharmProjects/Feature_Selector_Paper/Datasets/beijing_pm_2.5/PRSA_data_2010.1.1-2014.12.31.csv")
+    f"{working_dir}/Datasets/beijing_pm_2.5/PRSA_data_2010.1.1-2014.12.31.csv")
 data = feature_extractor(data)
-data.to_csv(f"/home/b023/PycharmProjects/Feature_Selector_Paper/Datasets/beijing_pm_2.5/PRSA_data_extracted.csv",
+data.to_csv( f"{working_dir}/Datasets/beijing_pm_2.5/PRSA_data_extracted.csv",
             index=False)

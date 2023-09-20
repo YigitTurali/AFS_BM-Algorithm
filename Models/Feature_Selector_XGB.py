@@ -306,7 +306,7 @@ class XGBoost_Model:
         self.create_masked_datasets()
 
         random_search = RandomizedSearchCV(self.base_model, param_distributions=self.param_grid, n_iter=15, cv=5,
-                                           verbose=-1, n_jobs=-1)
+                                           verbose=0, n_jobs=-1)
         random_search.fit(self.masked_X_train, self.masked_y_train, eval_set=[(self.masked_X_val, self.masked_y_val)],
                           verbose=False)
         self.best_params = random_search.best_params_
