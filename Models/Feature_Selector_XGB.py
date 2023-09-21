@@ -1,3 +1,4 @@
+import datetime
 import random
 import warnings
 
@@ -252,9 +253,19 @@ class Feature_Selector_XGB:
             print(f"Accuracy {accuracy_score(self.xgbM_Selector.y_test, y_hat)}")
 
         else:
-            y_preds = self.model.predict(self.xgbM_Selector.X_test)
-            test_loss = self.criterion(y_preds, self.xgbM_Selector.y_test)
+            y_hat = self.model.predict(self.xgbM_Selector.X_test)
+            test_loss = self.criterion(y_hat, self.xgbM_Selector.y_test)
             print(f"Final Test Loss:{test_loss.item()}")
+        date = str(datetime.datetime.now())
+        date = date.replace(" ", "_")
+        date = date.replace(":", "_")
+        date = date.replace(".", "_")
+        np.save(
+            f"Results/TimeSeries/m4_daily/fs_model/preds_fs_xgb_{date}.npy",
+            y_hat)
+        np.save(
+            f"Results/TimeSeries/m4_daily/fs_model/targets_{date}.npy",
+            self.xgbM_Selector.y_test)
 
         return test_loss.item()
 

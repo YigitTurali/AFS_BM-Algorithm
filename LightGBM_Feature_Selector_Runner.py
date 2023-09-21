@@ -244,8 +244,8 @@ if __name__ == '__main__':
             print("Test Loss for Baseline XGBoost: ", test_xgboost_baseline_loss[-1])
             print("------------------------------------------------------------------")
 
-            np.save("Results/TimeSeries/air_quality/test_fs_lgbm_model_loss_3.npy", np.asarray(test_fs_lgbm_model_loss))
-            np.save("Results/TimeSeries/air_quality/test_fs_xgb_model_loss_3.npy", np.asarray(test_fs_xgb_model_loss))
-            np.save("Results/TimeSeries/air_quality/test_lgbm_baseline_loss_3.npy", np.asarray(test_lgbm_baseline_loss))
-            np.save("Results/TimeSeries/air_quality/test_xgboost_baseline_loss_3.npy",
+            np.save("Results/TimeSeries/m4_daily/test_fs_lgbm_model_loss_w_preds.npy", np.asarray(test_fs_lgbm_model_loss))
+            np.save("Results/TimeSeries/m4_daily/test_fs_xgb_model_loss_w_preds.npy", np.asarray(test_fs_xgb_model_loss))
+            np.save("Results/TimeSeries/m4_daily/test_lgbm_baseline_loss_w_preds.npy", np.asarray(test_lgbm_baseline_loss))
+            np.save("Results/TimeSeries/m4_daily/test_xgboost_baseline_loss_w_preds.npy",
                     np.asarray(test_xgboost_baseline_loss))
