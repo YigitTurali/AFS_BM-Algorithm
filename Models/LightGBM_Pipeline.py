@@ -1,4 +1,6 @@
 import lightgbm as lgb
+import numpy as np
+import datetime
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 
@@ -55,9 +57,22 @@ class Baseline_LightGBM_Model:
         """Test the trained model."""
         if self.data_type == "Classification":
             self.y_pred = self.searched_trained_model.predict_proba(self.X_test)
+            self.y_hat = self.searched_trained_model.predict(self.X_test)
         else:
             self.y_pred = self.searched_trained_model.predict(self.X_test)
         self.loss = self.criterion(self.y_pred, self.y_test)
+
+        date = str(datetime.datetime.now())
+        date = date.replace(" ", "_")
+        date = date.replace(":", "_")
+        date = date.replace(".", "_")
+
+        np.save(
+            f"Results/Classification/aca_classification/fs_model/preds_baseline_lgbm_{date}.npy",
+            self.y_pred)
+        np.save(
+            f"Results/Classification/aca_classification/fs_model/targets_{date}.npy",
+            self.y_test)
         print(f"Test Loss for Baseline LGBM: {self.loss}")
         return self.loss
 

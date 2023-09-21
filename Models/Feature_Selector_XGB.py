@@ -1,8 +1,8 @@
 import random
 import warnings
+from datetime import datetime
 
 import numpy as np
-import plotly.graph_objects as go
 import torch
 import xgboost as xgb
 from sklearn.metrics import classification_report, accuracy_score, log_loss, mean_squared_error
@@ -252,9 +252,18 @@ class Feature_Selector_XGB:
             print(f"Accuracy {accuracy_score(self.xgbM_Selector.y_test, y_hat)}")
 
         else:
-            y_preds = self.model.predict(self.xgbM_Selector.X_test)
-            test_loss = self.criterion(y_preds, self.xgbM_Selector.y_test)
-            print(f"Final Test Loss:{test_loss.item()}")
+            y_hat = self.model.predict(self.xgbM_Selector.X_test)
+            test_loss = self.criterion(y_hat, self.xgbM_Selector.y_test)
+        date = str(datetime.datetime.now())
+        date = date.replace(" ", "_")
+        date = date.replace(":", "_")
+        date = date.replace(".", "_")
+        np.save(
+            f"Results/Classification/aca_classification/fs_model/preds_fs_xgb_{date}.npy",
+            y_hat)
+        np.save(
+            f"Results/Classification/aca_classification/fs_model/targets_{date}.npy",
+            self.xgbM_Selector.y_test)
 
         return test_loss.item()
 
@@ -280,12 +289,12 @@ class XGBoost_Model:
         self.mask = np.ones(self.X_train.shape[1])
 
         if data_type == "Classification":
-            self.base_model = xgb.XGBClassifier(**self.params, device="cuda",tree_method="gpu_hist")
+            self.base_model = xgb.XGBClassifier(**self.params, device="cuda", tree_method="gpu_hist")
             self.params["eval_metric"] = ["logloss"]
             self.params["objective"] = ["binary"]
 
         else:
-            self.base_model = xgb.XGBRegressor(**self.params, device="cuda",tree_method="gpu_hist")
+            self.base_model = xgb.XGBRegressor(**self.params, device="cuda", tree_method="gpu_hist")
             self.params["eval_metric"] = ["rmse"]
             self.params["objective"] = ["regression"]
 

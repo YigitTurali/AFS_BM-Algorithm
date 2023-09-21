@@ -1,7 +1,7 @@
 import os
 import warnings
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler,OneHotEncoder
 from sklearn.model_selection import train_test_split
 
 working_dir = os.getcwd()

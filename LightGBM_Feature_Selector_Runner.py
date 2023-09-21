@@ -8,7 +8,7 @@ import torch
 from tqdm import tqdm
 
 from DataLoaders.Dataset_Picker import Create_Dataset
-from DataLoaders.time_series_dataloader import TimeSeriesDataset
+from DataLoaders.time_series_dataloader import Create_Dataloader
 from Models.Feature_Selector_LightGBM import Feature_Selector_LGBM
 from Models.Feature_Selector_XGB import Feature_Selector_XGB
 from Models.LightGBM_Pipeline import Baseline_LightGBM_Model
@@ -34,7 +34,7 @@ def set_random_seeds(seed):
     print(f"Seeds have been set to {seed} for all random number generators.")
 
 
-set_random_seeds(221)
+set_random_seeds(333)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_name", type=str, default="statlog_aca", help="Dataset name")
@@ -48,98 +48,121 @@ if __name__ == '__main__':
     logging.info('Feature Selector LGBM Log')
 
     if data_type == "Classification":
-        X_train, y_train, X_val, y_val, X_val_mask, y_val_mask, X_test, y_test = Create_Dataset(dataset_name,
-                                                                                                val_ratio=0.2,
-                                                                                                mask_ratio=0.2,
-                                                                                                test_ratio=0.1)
+        dataset = Create_Dataset(dataset_name,
+                                 val_ratio=0.2,
+                                 mask_ratio=0.2,
+                                 test_ratio=0.1)
 
-        network = Feature_Selector_LGBM(params={"boosting_type": "gbdt", "importance_type": "gain",
-                                                "verbosity": -1},
-                                        param_grid={
-                                            'boosting_type': ['gbdt'],
-                                            'num_leaves': [20, 50],
-                                            'learning_rate': [0.01, 0.1, 0.5],
-                                            'n_estimators': [10, 20, 50],
-                                            'subsample': [0.6, 0.8, 1.0],
-                                            'colsample_bytree': [0.6, 0.8, 1.0],
-                                            # 'reg_alpha': [0.0, 0.1, 0.5],
-                                            # 'reg_lambda': [0.0, 0.1, 0.5],
-                                            'min_child_samples': [5, 10],
-                                        },
-                                        X_train=X_train, X_val=X_val,
-                                        X_val_mask=X_val_mask, X_test=X_test, y_train=y_train,
-                                        y_val=y_val, y_val_mask=y_val_mask, y_test=y_test,
-                                        data_type="Classification")
+        dataset = Create_Dataloader(dataset)
+        for data in tqdm(dataset):
+            X_train, y_train, X_val, y_val, X_val_mask, y_val_mask, X_test, y_test = data
+            network = Feature_Selector_LGBM(params={"boosting_type": "gbdt", "importance_type": "gain",
+                                                    "verbosity": -1},
+                                            param_grid={
+                                                'boosting_type': ['gbdt'],
+                                                'num_leaves': [10, 20],
+                                                'learning_rate': [0.01, 0.1, 0.5],
+                                                'n_estimators': [50, 10, 20],
+                                                'subsample': [0.6, 0.8, 1.0],
+                                                'colsample_bytree': [0.6, 0.8, 1.0],
+                                                # 'reg_alpha': [0.0, 0.1, 0.5],
+                                                # 'reg_lambda': [0.0, 0.1, 0.5],
+                                                'min_child_samples': [5, 10],
+                                            },
+                                            X_train=X_train, X_val=X_val,
+                                            X_val_mask=X_val_mask, X_test=X_test, y_train=y_train,
+                                            y_val=y_val, y_val_mask=y_val_mask, y_test=y_test,
+                                            data_type="Classification")
 
-        fit_network = network.fit_network()
-        test_loss_lgbm_fs = network.test_network()
+            fit_network = network.fit_network()
+            test_fs_lgbm_model_loss = network.Test_Network()
 
-        network = Feature_Selector_XGB(params={"boosting_type": "gbdt", "importance_type": "gain",
-                                               "verbosity": 0},
-                                       param_grid={
-                                           'boosting_type': ['gbdt'],
-                                           'num_leaves': [20, 50],
-                                           'learning_rate': [0.01, 0.1, 0.5],
-                                           'n_estimators': [10, 20, 50],
-                                           'subsample': [0.6, 0.8, 1.0],
-                                           'colsample_bytree': [0.6, 0.8, 1.0],
-                                           # 'reg_alpha': [0.0, 0.1, 0.5],
-                                           # 'reg_lambda': [0.0, 0.1, 0.5],
-                                           'min_child_samples': [5, 10],
-                                       },
-                                       X_train=X_train, X_val=X_val,
-                                       X_val_mask=X_val_mask, X_test=X_test, y_train=y_train,
-                                       y_val=y_val, y_val_mask=y_val_mask, y_test=y_test,
-                                       data_type="Regression")
+            network = Feature_Selector_XGB(params={"boosting_type": "gbdt", "importance_type": "gain",
+                                                   "verbosity": 0},
+                                           param_grid={
+                                               'boosting_type': ['gbdt'],
+                                               'num_leaves': [10, 20],
+                                               'learning_rate': [0.01, 0.1, 0.5],
+                                               'n_estimators': [10, 20, 50],
+                                               'subsample': [0.6, 0.8, 1.0],
+                                               'colsample_bytree': [0.6, 0.8, 1.0],
+                                               # 'reg_alpha': [0.0, 0.1, 0.5],
+                                               # 'reg_lambda': [0.0, 0.1, 0.5],
+                                               'min_child_samples': [5, 10],
+                                           },
+                                           X_train=X_train, X_val=X_val,
+                                           X_val_mask=X_val_mask, X_test=X_test, y_train=y_train,
+                                           y_val=y_val, y_val_mask=y_val_mask, y_test=y_test,
+                                           data_type="Regression")
 
-        network.fit_network()
-        test_loss_xgb_fs = network.Test_Network()
+            network.fit_network()
+            test_fs_xgb_model_loss = network.Test_Network()
 
-        # Baseline LGBM Model
-        X_val = pd.concat([X_val, X_val_mask], axis=0)
-        y_val = np.concatenate([y_val, y_val_mask], axis=0)
-        baseline_network_lgbm = Baseline_LightGBM_Model(params={"boosting_type": "gbdt", "importance_type": "gain",
-                                                                "verbosity": -1},
-                                                        param_grid={
-                                                            'boosting_type': ['gbdt'],
-                                                            'num_leaves': [10, 20],
-                                                            'learning_rate': [0.01, 0.1, 0.5],
-                                                            'n_estimators': [5, 10, 20],
-                                                            'subsample': [0.6, 0.8, 1.0],
-                                                            'colsample_bytree': [0.6, 0.8, 1.0],
-                                                            # 'reg_alpha': [0.0, 0.1, 0.5],
-                                                            # 'reg_lambda': [0.0, 0.1, 0.5],
-                                                            'min_child_samples': [5, 10],
-                                                        },
-                                                        X_train=X_train, X_val=X_val, X_test=X_test,
-                                                        y_train=y_train, y_val=y_val, y_test=y_test,
-                                                        data_type="Classification")
+            # Baseline LGBM Model
+            X_val = pd.concat([X_val, X_val_mask], axis=0)
+            y_val = np.concatenate([y_val, y_val_mask], axis=0)
+            baseline_network_lgbm = Baseline_LightGBM_Model(params={"boosting_type": "gbdt", "importance_type": "gain",
+                                                                    "verbosity": -1},
+                                                            param_grid={
+                                                                'boosting_type': ['gbdt'],
+                                                                'num_leaves': [10, 20],
+                                                                'learning_rate': [0.01, 0.1, 0.5],
+                                                                'n_estimators': [5, 10, 20],
+                                                                'subsample': [0.6, 0.8, 1.0],
+                                                                'colsample_bytree': [0.6, 0.8, 1.0],
+                                                                # 'reg_alpha': [0.0, 0.1, 0.5],
+                                                                # 'reg_lambda': [0.0, 0.1, 0.5],
+                                                                'min_child_samples': [5, 10],
+                                                            },
+                                                            X_train=X_train, X_val=X_val, X_test=X_test,
+                                                            y_train=y_train, y_val=y_val, y_test=y_test,
+                                                            data_type="Classification")
 
-        baseline_network_lgbm.Train_with_RandomSearch()
-        test_lgbm_baseline_loss = baseline_network_lgbm.Test_Network()
+            baseline_network_lgbm.Train_with_RandomSearch()
+            test_lgbm_baseline_loss = baseline_network_lgbm.Test_Network()
 
-        baseline_network_xgboost = Baseline_XgBoost_Model(params={"boosting_type": "gbdt", "importance_type": "gain",
-                                                                  "verbosity": -1},
-                                                          param_grid={
-                                                              'boosting_type': ['gbdt'],
-                                                              'num_leaves': [10, 20],
-                                                              'learning_rate': [0.01, 0.1, 0.5],
-                                                              'n_estimators': [5, 10, 20],
-                                                              'subsample': [0.6, 0.8, 1.0],
-                                                              'colsample_bytree': [0.6, 0.8, 1.0],
-                                                              # 'reg_alpha': [0.0, 0.1, 0.5],
-                                                              # 'reg_lambda': [0.0, 0.1, 0.5],
-                                                              'min_child_samples': [5, 10],
-                                                          },
-                                                          X_train=X_train, X_val=X_val, X_test=X_test,
-                                                          y_train=y_train, y_val=y_val, y_test=y_test,
-                                                          data_type="Classification")
+            baseline_network_xgboost = Baseline_XgBoost_Model(
+                params={"boosting_type": "gbdt", "importance_type": "gain",
+                        "verbosity": -1},
+                param_grid={
+                    'boosting_type': ['gbdt'],
+                    'num_leaves': [10, 20],
+                    'learning_rate': [0.01, 0.1, 0.5],
+                    'n_estimators': [5, 10, 20],
+                    'subsample': [0.6, 0.8, 1.0],
+                    'colsample_bytree': [0.6, 0.8, 1.0],
+                    # 'reg_alpha': [0.0, 0.1, 0.5],
+                    # 'reg_lambda': [0.0, 0.1, 0.5],
+                    'min_child_samples': [5, 10],
+                },
+                X_train=X_train, X_val=X_val, X_test=X_test,
+                y_train=y_train, y_val=y_val, y_test=y_test,
+                data_type="Classification")
+
+            baseline_network_xgboost.Train_with_RandomSearch()
+            test_xgboost_baseline_loss = baseline_network_xgboost.Test_Network()
+
+            print("------------------------------------------------------------------")
+            print("Test Loss for Feature Selector LGBM: ", test_fs_lgbm_model_loss)
+            print("Test Loss for Feature Selector XGBoost: ", test_fs_xgb_model_loss)
+            print("Test Loss for Baseline LGBM: ", test_lgbm_baseline_loss)
+            print("Test Loss for Baseline XGBoost: ", test_xgboost_baseline_loss)
+            print("------------------------------------------------------------------")
+
+            np.save("Results/TimeSeries/Classification/aca_classification/test_fs_lgbm_model_loss.npy",
+                    np.asarray(test_fs_lgbm_model_loss))
+            np.save("Results/TimeSeries/Classification/aca_classification/test_fs_xgb_model_loss.npy",
+                    np.asarray(test_fs_xgb_model_loss))
+            np.save("Results/TimeSeries/Classification/aca_classification/test_lgbm_baseline_loss.npy",
+                    np.asarray(test_lgbm_baseline_loss))
+            np.save("Results/TimeSeries/Classification/aca_classification/test_xgboost_baseline_loss.npy",
+                    np.asarray(test_xgboost_baseline_loss))
 
 
 
     else:
         dataset = Create_Dataset(dataset_name)
-        dataset = TimeSeriesDataset(dataset)
+        dataset = Create_Dataloader(dataset)
         test_fs_lgbm_model_loss = []
         test_fs_xgb_model_loss = []
         test_lgbm_baseline_loss = []
@@ -176,7 +199,7 @@ if __name__ == '__main__':
                                                'boosting_type': ['gbdt'],
                                                'num_leaves': [20, 50, 100],
                                                'learning_rate': [0.01, 0.1, 0.5],
-                                               'n_estimators': [20, 50],
+                                               'n_estimators': [20, 50, 100],
                                                'subsample': [0.6, 0.8, 1.0],
                                                'colsample_bytree': [0.6, 0.8, 1.0],
                                                # 'reg_alpha': [0.0, 0.1, 0.5],
@@ -199,9 +222,9 @@ if __name__ == '__main__':
                                                                     "verbosity": -1},
                                                             param_grid={
                                                                 'boosting_type': ['gbdt'],
-                                                                'num_leaves': [20, 50, 100],
+                                                                'num_leaves': [5, 10],
                                                                 'learning_rate': [0.01, 0.1, 0.5],
-                                                                'n_estimators': [20, 50],
+                                                                'n_estimators': [5, 10],
                                                                 'subsample': [0.6, 0.8, 1.0],
                                                                 'colsample_bytree': [0.6, 0.8, 1.0],
                                                                 # 'reg_alpha': [0.0, 0.1, 0.5],
@@ -223,9 +246,9 @@ if __name__ == '__main__':
                         "verbosity": 0},
                 param_grid={
                     'boosting_type': ['gbdt'],
-                    'num_leaves': [20, 50],
+                    'num_leaves': [10, 20],
                     'learning_rate': [0.01, 0.1, 0.5],
-                    'n_estimators': [20, 50],
+                    'n_estimators': [10, 20],
                     'subsample': [0.6, 0.8, 1.0],
                     'colsample_bytree': [0.6, 0.8, 1.0],
                     # 'reg_alpha': [0.0, 0.1, 0.5],

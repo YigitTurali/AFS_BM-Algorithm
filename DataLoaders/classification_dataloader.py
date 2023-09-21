@@ -1,16 +1,15 @@
 import torch
 from torch.utils.data import Dataset
-class TorchDataset(Dataset):
-    def __init__(self, data: torch.float64, target: torch.float64) -> None:
+class ClassificationDataset(Dataset):
+    def __init__(self, data):
         super().__init__()
         self.data = data
-        self.target = target
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, index):
-        data = self.data[index]
-        target = self.target[index]
+        data = self.data[index,:-1]
+        target = self.data[index,-1]
 
         return data, target

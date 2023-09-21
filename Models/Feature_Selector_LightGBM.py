@@ -1,16 +1,16 @@
+import datetime
 import random
 import warnings
 
 import lightgbm as lgb
-import matplotlib.pyplot as plt
 import numpy as np
-import plotly.graph_objects as go
 import torch
 from sklearn.metrics import classification_report, accuracy_score, log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 
 # Suppress warnings
 warnings.filterwarnings("ignore")
+
 
 def set_random_seeds(seed):
     """Set random seed for reproducibility across different libraries."""
@@ -29,6 +29,7 @@ def set_random_seeds(seed):
     # You can add more libraries or functions here, if needed
 
     print(f"Seeds have been set to {seed} for all random number generators.")
+
 
 class MaskedEarlyStopping:
     """Early stopping mechanism that uses a mask."""
@@ -256,9 +257,21 @@ class Feature_Selector_LGBM:
             print(f"Accuracy {accuracy_score(self.LGBM_Selector.y_test, y_hat)}")
 
         else:
-            y_preds = self.model.predict(self.LGBM_Selector.X_test)
-            test_loss = self.criterion(y_preds, self.LGBM_Selector.y_test)
+            y_hat = self.model.predict(self.LGBM_Selector.X_test)
+            test_loss = self.criterion(y_hat, self.LGBM_Selector.y_test)
             print(f"Final Test Loss:{test_loss.item()}")
+
+        date = str(datetime.datetime.now())
+        date = date.replace(" ", "_")
+        date = date.replace(":", "_")
+        date = date.replace(".", "_")
+
+        np.save(
+            f"Results/Classification/aca_classification/fs_model/preds_fs_lgbm_{date}.npy",
+            y_hat)
+        np.save(
+            f"Results/Classification/aca_classification/fs_model/targets_{date}.npy",
+            self.LGBM_Selector.y_test)
 
         return test_loss.item()
 

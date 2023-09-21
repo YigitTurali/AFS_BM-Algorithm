@@ -1,7 +1,7 @@
 from torch.utils.data import Dataset
 
 
-class TimeSeriesDataset(Dataset):
+class Create_Dataloader(Dataset):
     def __init__(self, data_dict):
         """
         Args:
