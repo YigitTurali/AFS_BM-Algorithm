@@ -1,17 +1,19 @@
 import argparse
 import logging
+import random
+
 import numpy as np
 import pandas as pd
-import random
 import torch
 from tqdm import tqdm
+
 from DataLoaders.Dataset_Picker import Create_Dataset
 from DataLoaders.time_series_dataloader import TimeSeriesDataset
-
 from Models.Feature_Selector_LightGBM import Feature_Selector_LGBM
+from Models.Feature_Selector_XGB import Feature_Selector_XGB
 from Models.LightGBM_Pipeline import Baseline_LightGBM_Model
 from Models.XGBoost_Pipeline import Baseline_XgBoost_Model
-from Models.Feature_Selector_XGB import Feature_Selector_XGB
+
 
 def set_random_seeds(seed):
     """Set random seed for reproducibility across different libraries."""
@@ -31,13 +33,12 @@ def set_random_seeds(seed):
 
     print(f"Seeds have been set to {seed} for all random number generators.")
 
+
 set_random_seeds(221)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_name", type=str, default="statlog_aca", help="Dataset name")
 parser.add_argument("--type", type=str, default="Classification", help="Type of dataset")
-
-
 
 if __name__ == '__main__':
     dataset_name = parser.parse_args().dataset_name
@@ -52,7 +53,7 @@ if __name__ == '__main__':
                                                                                                 mask_ratio=0.2,
                                                                                                 test_ratio=0.1)
 
-        network = Feature_Selector_LGBM(params={"boosting_type": "gbdt", "importance_type": "split",
+        network = Feature_Selector_LGBM(params={"boosting_type": "gbdt", "importance_type": "gain",
                                                 "verbosity": -1},
                                         param_grid={
                                             'boosting_type': ['gbdt'],
@@ -73,7 +74,7 @@ if __name__ == '__main__':
         fit_network = network.fit_network()
         test_loss_lgbm_fs = network.test_network()
 
-        network = Feature_Selector_XGB(params={"boosting_type": "gbdt", "importance_type": "split",
+        network = Feature_Selector_XGB(params={"boosting_type": "gbdt", "importance_type": "gain",
                                                "verbosity": 0},
                                        param_grid={
                                            'boosting_type': ['gbdt'],
@@ -97,13 +98,13 @@ if __name__ == '__main__':
         # Baseline LGBM Model
         X_val = pd.concat([X_val, X_val_mask], axis=0)
         y_val = np.concatenate([y_val, y_val_mask], axis=0)
-        baseline_network_lgbm = Baseline_LightGBM_Model(params={"boosting_type": "gbdt", "importance_type": "split",
+        baseline_network_lgbm = Baseline_LightGBM_Model(params={"boosting_type": "gbdt", "importance_type": "gain",
                                                                 "verbosity": -1},
                                                         param_grid={
                                                             'boosting_type': ['gbdt'],
-                                                            'num_leaves': [20, 50],
+                                                            'num_leaves': [5, 10, 20],
                                                             'learning_rate': [0.01, 0.1, 0.5],
-                                                            'n_estimators': [20, 50],
+                                                            'n_estimators': [10, 20],
                                                             'subsample': [0.6, 0.8, 1.0],
                                                             'colsample_bytree': [0.6, 0.8, 1.0],
                                                             # 'reg_alpha': [0.0, 0.1, 0.5],
@@ -117,13 +118,13 @@ if __name__ == '__main__':
         baseline_network_lgbm.Train_with_RandomSearch()
         test_lgbm_baseline_loss = baseline_network_lgbm.Test_Network()
 
-        baseline_network_xgboost = Baseline_XgBoost_Model(params={"boosting_type": "gbdt", "importance_type": "split",
+        baseline_network_xgboost = Baseline_XgBoost_Model(params={"boosting_type": "gbdt", "importance_type": "gain",
                                                                   "verbosity": -1},
                                                           param_grid={
                                                               'boosting_type': ['gbdt'],
-                                                              'num_leaves': [20, 50],
+                                                              'num_leaves': [5, 10, 20],
                                                               'learning_rate': [0.01, 0.1, 0.5],
-                                                              'n_estimators': [20, 50],
+                                                              'n_estimators': [10, 20],
                                                               'subsample': [0.6, 0.8, 1.0],
                                                               'colsample_bytree': [0.6, 0.8, 1.0],
                                                               # 'reg_alpha': [0.0, 0.1, 0.5],
@@ -147,11 +148,11 @@ if __name__ == '__main__':
         for data in tqdm(dataset):
             count += 1
             X_train, y_train, X_val, y_val, X_val_mask, y_val_mask, X_test, y_test = data
-            network = Feature_Selector_LGBM(params={"boosting_type": "gbdt", "importance_type": "split",
+            network = Feature_Selector_LGBM(params={"boosting_type": "gbdt", "importance_type": "gain",
                                                     "verbosity": -1},
                                             param_grid={
                                                 'boosting_type': ['gbdt'],
-                                                'num_leaves': [20, 50],
+                                                'num_leaves': [20, 50, 100],
                                                 'learning_rate': [0.01, 0.1, 0.5],
                                                 'n_estimators': [20, 50],
                                                 'subsample': [0.6, 0.8, 1.0],
@@ -169,23 +170,23 @@ if __name__ == '__main__':
             test_loss = network.Test_Network()
             test_fs_lgbm_model_loss.append(test_loss)
 
-            network = Feature_Selector_XGB(params={"boosting_type": "gbdt", "importance_type": "split",
-                                                    "verbosity": 0},
-                                            param_grid={
-                                                'boosting_type': ['gbdt'],
-                                                'num_leaves': [20, 50],
-                                                'learning_rate': [0.01, 0.1, 0.5],
-                                                'n_estimators': [20, 50],
-                                                'subsample': [0.6, 0.8, 1.0],
-                                                'colsample_bytree': [0.6, 0.8, 1.0],
-                                                # 'reg_alpha': [0.0, 0.1, 0.5],
-                                                # 'reg_lambda': [0.0, 0.1, 0.5],
-                                                'min_child_samples': [5, 10],
-                                            },
-                                            X_train=X_train, X_val=X_val,
-                                            X_val_mask=X_val_mask, X_test=X_test, y_train=y_train,
-                                            y_val=y_val, y_val_mask=y_val_mask, y_test=y_test,
-                                            data_type="Regression")
+            network = Feature_Selector_XGB(params={"boosting_type": "gbdt", "importance_type": "gain",
+                                                   "verbosity": 0},
+                                           param_grid={
+                                               'boosting_type': ['gbdt'],
+                                               'num_leaves': [20, 50, 100],
+                                               'learning_rate': [0.01, 0.1, 0.5],
+                                               'n_estimators': [20, 50],
+                                               'subsample': [0.6, 0.8, 1.0],
+                                               'colsample_bytree': [0.6, 0.8, 1.0],
+                                               # 'reg_alpha': [0.0, 0.1, 0.5],
+                                               # 'reg_lambda': [0.0, 0.1, 0.5],
+                                               'min_child_samples': [5, 10],
+                                           },
+                                           X_train=X_train, X_val=X_val,
+                                           X_val_mask=X_val_mask, X_test=X_test, y_train=y_train,
+                                           y_val=y_val, y_val_mask=y_val_mask, y_test=y_test,
+                                           data_type="Regression")
 
             network.fit_network()
             test_loss = network.Test_Network()
@@ -194,13 +195,13 @@ if __name__ == '__main__':
             # Baseline LGBM Model
             X_val = pd.concat([X_val, X_val_mask], axis=0)
             y_val = np.concatenate([y_val, y_val_mask], axis=0)
-            baseline_network_lgbm = Baseline_LightGBM_Model(params={"boosting_type": "gbdt", "importance_type": "split",
-                                                                    "verbosity":-1},
+            baseline_network_lgbm = Baseline_LightGBM_Model(params={"boosting_type": "gbdt", "importance_type": "gain",
+                                                                    "verbosity": -1},
                                                             param_grid={
                                                                 'boosting_type': ['gbdt'],
-                                                                'num_leaves': [20, 50],
+                                                                'num_leaves': [5, 10, 20],
                                                                 'learning_rate': [0.01, 0.1, 0.5],
-                                                                'n_estimators': [20, 50],
+                                                                'n_estimators': [10, 20],
                                                                 'subsample': [0.6, 0.8, 1.0],
                                                                 'colsample_bytree': [0.6, 0.8, 1.0],
                                                                 # 'reg_alpha': [0.0, 0.1, 0.5],
@@ -218,13 +219,13 @@ if __name__ == '__main__':
 
             # Baseline XGB Model
             baseline_network_xgboost = Baseline_XgBoost_Model(
-                params={"boosting_type": "gbdt", "importance_type": "split",
+                params={"boosting_type": "gbdt", "importance_type": "gain",
                         "verbosity": 0},
                 param_grid={
                     'boosting_type': ['gbdt'],
-                    'num_leaves': [20, 50],
+                    'num_leaves': [5, 10, 20],
                     'learning_rate': [0.01, 0.1, 0.5],
-                    'n_estimators': [20, 50],
+                    'n_estimators': [10, 20],
                     'subsample': [0.6, 0.8, 1.0],
                     'colsample_bytree': [0.6, 0.8, 1.0],
                     # 'reg_alpha': [0.0, 0.1, 0.5],
@@ -243,11 +244,8 @@ if __name__ == '__main__':
             print("Test Loss for Baseline XGBoost: ", test_xgboost_baseline_loss[-1])
             print("------------------------------------------------------------------")
 
-            np.save("Results/TimeSeries/air_quality/test_fs_lgbm_model_loss_2.npy", np.asarray(test_fs_lgbm_model_loss))
-            np.save("Results/TimeSeries/air_quality/test_fs_xgb_model_loss_2.npy", np.asarray(test_fs_xgb_model_loss))
-            np.save("Results/TimeSeries/air_quality/test_lgbm_baseline_loss_2.npy", np.asarray(test_lgbm_baseline_loss))
-            np.save("Results/TimeSeries/air_quality/test_xgboost_baseline_loss_2.npy", np.asarray(test_xgboost_baseline_loss))
-
-
-
-
+            np.save("Results/TimeSeries/air_quality/test_fs_lgbm_model_loss_3.npy", np.asarray(test_fs_lgbm_model_loss))
+            np.save("Results/TimeSeries/air_quality/test_fs_xgb_model_loss_3.npy", np.asarray(test_fs_xgb_model_loss))
+            np.save("Results/TimeSeries/air_quality/test_lgbm_baseline_loss_3.npy", np.asarray(test_lgbm_baseline_loss))
+            np.save("Results/TimeSeries/air_quality/test_xgboost_baseline_loss_3.npy",
+                    np.asarray(test_xgboost_baseline_loss))
