@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 import random
 
 import numpy as np
@@ -34,7 +35,7 @@ def set_random_seeds(seed):
     print(f"Seeds have been set to {seed} for all random number generators.")
 
 
-set_random_seeds(333)
+set_random_seeds(222)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_name", type=str, default="statlog_aca", help="Dataset name")
@@ -43,6 +44,16 @@ parser.add_argument("--type", type=str, default="Classification", help="Type of 
 if __name__ == '__main__':
     dataset_name = parser.parse_args().dataset_name
     data_type = parser.parse_args().type
+
+    directory_name = f"{data_type}/{dataset_name}"
+
+    if not os.path.exists("Results/" + directory_name):
+        os.makedirs("Results/" + directory_name)
+        os.makedirs("Results/" + directory_name + "/fs_model")
+        os.makedirs("Results/" + directory_name + "/baseline_model")
+        print("Directory created successfully")
+    else:
+        print("Directory already exists")
 
     logging.basicConfig(filename='console_lgbm.log', level=logging.DEBUG)
     logging.info('Feature Selector LGBM Log')
@@ -59,20 +70,33 @@ if __name__ == '__main__':
             network = Feature_Selector_LGBM(params={"boosting_type": "gbdt", "importance_type": "gain",
                                                     "verbosity": -1},
                                             param_grid={
-                                                'boosting_type': ['gbdt'],
                                                 'num_leaves': [10, 20],
                                                 'learning_rate': [0.01, 0.1, 0.5],
-                                                'n_estimators': [50, 10, 20],
+                                                'n_estimators': [10, 20],
                                                 'subsample': [0.6, 0.8, 1.0],
                                                 'colsample_bytree': [0.6, 0.8, 1.0],
                                                 # 'reg_alpha': [0.0, 0.1, 0.5],
                                                 # 'reg_lambda': [0.0, 0.1, 0.5],
                                                 'min_child_samples': [5, 10],
                                             },
+                                            # param_grid={
+                                            #     'boosting_type': ['gbdt'],
+                                            #     'num_leaves': [31, 63, 127],
+                                            #     'min_data_in_leaf': [20, 40, 60],
+                                            #     'max_depth': [-1, 5, 7, 10],
+                                            #     'learning_rate': [0.01, 0.05, 0.1],
+                                            #     'n_estimators': [100, 200, 500],
+                                            #     'subsample_for_bin': [50000, 100000],
+                                            #     'min_child_samples': [10, 20, 30],
+                                            #     'reg_alpha': [0, 0.1, 1.0],
+                                            #     'reg_lambda': [0, 0.1, 1.0],
+                                            #     'colsample_bytree': [0.7, 0.8, 0.9],
+                                            #     'subsample': [0.7, 0.8, 0.9],
+                                            # },
                                             X_train=X_train, X_val=X_val,
                                             X_val_mask=X_val_mask, X_test=X_test, y_train=y_train,
                                             y_val=y_val, y_val_mask=y_val_mask, y_test=y_test,
-                                            data_type="Classification")
+                                            data_type="Classification", dir_name=directory_name)
 
             fit_network = network.fit_network()
             test_fs_lgbm_model_loss = network.Test_Network()
@@ -80,20 +104,20 @@ if __name__ == '__main__':
             network = Feature_Selector_XGB(params={"boosting_type": "gbdt", "importance_type": "gain",
                                                    "verbosity": 0},
                                            param_grid={
-                                               'boosting_type': ['gbdt'],
                                                'num_leaves': [10, 20],
                                                'learning_rate': [0.01, 0.1, 0.5],
-                                               'n_estimators': [10, 20, 50],
+                                               'n_estimators': [10, 20],
                                                'subsample': [0.6, 0.8, 1.0],
                                                'colsample_bytree': [0.6, 0.8, 1.0],
                                                # 'reg_alpha': [0.0, 0.1, 0.5],
                                                # 'reg_lambda': [0.0, 0.1, 0.5],
                                                'min_child_samples': [5, 10],
                                            },
+
                                            X_train=X_train, X_val=X_val,
                                            X_val_mask=X_val_mask, X_test=X_test, y_train=y_train,
                                            y_val=y_val, y_val_mask=y_val_mask, y_test=y_test,
-                                           data_type="Regression")
+                                           data_type="Classification", dir_name=directory_name)
 
             network.fit_network()
             test_fs_xgb_model_loss = network.Test_Network()
@@ -107,7 +131,7 @@ if __name__ == '__main__':
                                                                 'boosting_type': ['gbdt'],
                                                                 'num_leaves': [10, 20],
                                                                 'learning_rate': [0.01, 0.1, 0.5],
-                                                                'n_estimators': [5, 10, 20],
+                                                                'n_estimators': [10, 20],
                                                                 'subsample': [0.6, 0.8, 1.0],
                                                                 'colsample_bytree': [0.6, 0.8, 1.0],
                                                                 # 'reg_alpha': [0.0, 0.1, 0.5],
@@ -116,7 +140,7 @@ if __name__ == '__main__':
                                                             },
                                                             X_train=X_train, X_val=X_val, X_test=X_test,
                                                             y_train=y_train, y_val=y_val, y_test=y_test,
-                                                            data_type="Classification")
+                                                            data_type="Classification", dir_name=directory_name)
 
             baseline_network_lgbm.Train_with_RandomSearch()
             test_lgbm_baseline_loss = baseline_network_lgbm.Test_Network()
@@ -137,7 +161,7 @@ if __name__ == '__main__':
                 },
                 X_train=X_train, X_val=X_val, X_test=X_test,
                 y_train=y_train, y_val=y_val, y_test=y_test,
-                data_type="Classification")
+                data_type="Classification", dir_name=directory_name)
 
             baseline_network_xgboost.Train_with_RandomSearch()
             test_xgboost_baseline_loss = baseline_network_xgboost.Test_Network()
@@ -149,13 +173,13 @@ if __name__ == '__main__':
             print("Test Loss for Baseline XGBoost: ", test_xgboost_baseline_loss)
             print("------------------------------------------------------------------")
 
-            np.save("Results/Classification/aca_classification/test_fs_lgbm_model_loss.npy",
+            np.save(f"Results/Classification/{dataset_name}/test_fs_lgbm_model_loss.npy",
                     np.asarray(test_fs_lgbm_model_loss))
-            np.save("Results/Classification/aca_classification/test_fs_xgb_model_loss.npy",
+            np.save(f"Results/Classification/{dataset_name}/test_fs_xgb_model_loss.npy",
                     np.asarray(test_fs_xgb_model_loss))
-            np.save("Results/Classification/aca_classification/test_lgbm_baseline_loss.npy",
+            np.save(f"Results/Classification/{dataset_name}/test_lgbm_baseline_loss.npy",
                     np.asarray(test_lgbm_baseline_loss))
-            np.save("Results/Classification/aca_classification/test_xgboost_baseline_loss.npy",
+            np.save(f"Results/Classification/{dataset_name}/test_xgboost_baseline_loss.npy",
                     np.asarray(test_xgboost_baseline_loss))
 
 
@@ -187,7 +211,7 @@ if __name__ == '__main__':
                                             X_train=X_train, X_val=X_val,
                                             X_val_mask=X_val_mask, X_test=X_test, y_train=y_train,
                                             y_val=y_val, y_val_mask=y_val_mask, y_test=y_test,
-                                            data_type="Regression")
+                                            data_type="Regression", dir_name=directory_name)
 
             network.fit_network()
             test_loss = network.Test_Network()
@@ -209,7 +233,7 @@ if __name__ == '__main__':
                                            X_train=X_train, X_val=X_val,
                                            X_val_mask=X_val_mask, X_test=X_test, y_train=y_train,
                                            y_val=y_val, y_val_mask=y_val_mask, y_test=y_test,
-                                           data_type="Regression")
+                                           data_type="Regression", dir_name=directory_name)
 
             network.fit_network()
             test_loss = network.Test_Network()
@@ -233,7 +257,7 @@ if __name__ == '__main__':
                                                             },
                                                             X_train=X_train, X_val=X_val, X_test=X_test,
                                                             y_train=y_train, y_val=y_val, y_test=y_test,
-                                                            data_type="Regression")
+                                                            data_type="Regression", dir_name=directory_name)
 
             baseline_network_lgbm.Train_with_RandomSearch()
             best_params_xgboost = baseline_network_lgbm.best_params
@@ -257,7 +281,7 @@ if __name__ == '__main__':
                 },
                 X_train=X_train, X_val=X_val, X_test=X_test,
                 y_train=y_train, y_val=y_val, y_test=y_test,
-                data_type="Regression")
+                data_type="Regression", dir_name=directory_name)
             baseline_network_xgboost.Train_with_RandomSearch()
             test_xgboost_baseline_loss.append(baseline_network_xgboost.Test_Network())
             print("------------------------------------------------------------------")
@@ -267,8 +291,11 @@ if __name__ == '__main__':
             print("Test Loss for Baseline XGBoost: ", test_xgboost_baseline_loss[-1])
             print("------------------------------------------------------------------")
 
-            np.save("Results/TimeSeries/Appliances/test_fs_lgbm_model_loss3.npy", np.asarray(test_fs_lgbm_model_loss))
-            np.save("Results/TimeSeries/Appliances/test_fs_xgb_model_loss3.npy", np.asarray(test_fs_xgb_model_loss))
-            np.save("Results/TimeSeries/Appliances/test_lgbm_baseline_loss3.npy", np.asarray(test_lgbm_baseline_loss))
-            np.save("Results/TimeSeries/Appliances/test_xgboost_baseline_loss3.npy",
+            np.save(f"Results/Regression/{dataset_name}/test_fs_lgbm_model_loss3.npy",
+                    np.asarray(test_fs_lgbm_model_loss))
+            np.save(f"Results/Regression/{dataset_name}/test_fs_xgb_model_loss3.npy",
+                    np.asarray(test_fs_xgb_model_loss))
+            np.save(f"Results/Regression/{dataset_name}/test_lgbm_baseline_loss3.npy",
+                    np.asarray(test_lgbm_baseline_loss))
+            np.save(f"Results/Regression/{dataset_name}/test_xgboost_baseline_loss3.npy",
                     np.asarray(test_xgboost_baseline_loss))

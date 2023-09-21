@@ -9,7 +9,7 @@ class Baseline_XgBoost_Model:
     """Wrapper for XgBoost model with utility functions."""
 
     def __init__(self, params, param_grid, X_train, X_val, X_test, y_train, y_val, y_test,
-                 data_type):
+                 data_type,dir_name):
         # Initialization with dataset and parameters
         self.params = params
         self.param_grid = param_grid
@@ -20,6 +20,7 @@ class Baseline_XgBoost_Model:
         self.X_test = X_test
         self.y_test = y_test
         self.data_type = data_type
+        self.dir_name = dir_name
 
         if data_type == "Classification":
             self.base_model = xgb.XGBClassifier(**self.params, device="cuda", tree_method="gpu_hist")
@@ -64,10 +65,10 @@ class Baseline_XgBoost_Model:
         date = date.replace(".", "_")
 
         np.save(
-            f"Results/Classification/aca_classification/fs_model/preds_baseline_xgb_{date}.npy",
+            f"Results/{self.dir_name}/baseline_model/preds_baseline_xgb_{date}.npy",
             self.y_pred)
         np.save(
-            f"Results/Classification/aca_classification/fs_model/targets_{date}.npy",
+            f"Results/{self.dir_name}/baseline_model/targets_{date}.npy",
             self.y_test)
 
         print("Test Loss for Baseline XGBoost: ", self.loss)

@@ -30,31 +30,30 @@ def Create_Dataset(dataset_name, val_ratio=0.2,
         data_dir = f"{working_dir}/DataLoaders/Datasets/statlog_aca"
         data = pd.read_csv(f"{data_dir}/australian.csv",index_col=False)
         scaler = MinMaxScaler()
-        data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
-
+        data_t = pd.DataFrame(scaler.fit_transform(data[["X2", "X3", "X7", "X10", "X13", "X14"]]),columns=["X2", "X3", "X7", "X10", "X13", "X14"])
+        data[["X2", "X3", "X7", "X10", "X13", "X14"]] = data_t
     elif dataset_name == "statlog_gcd":
         data_dir = f"{working_dir}/DataLoaders/Datasets/statlog_gcd"
-        data = pd.read_csv(f"{data_dir}/german.data-numeric.txt",index_col=False)
+        data = pd.read_csv(f"{data_dir}/german-data-numeric.csv",index_col=False,dtype=float)
         scaler = MinMaxScaler()
-        data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
+        data_t = pd.DataFrame(scaler.fit_transform(data[["X2", "X4", "X10"]]),
+                              columns=["X2", "X4", "X10"])
+        data[["X2", "X4", "X10"]] = data_t
 
     elif dataset_name == "appliances":
         data_dir = f"{working_dir}/DataLoaders/Datasets/Appliances_Energy_Prediction"
         data = pd.read_csv(f"{data_dir}/energydata_complete_extracted.csv", index_col=False)
-        scaler = MinMaxScaler()
-        data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
+
 
     elif dataset_name == "ise":
         data_dir = f"{working_dir}/DataLoaders/Datasets/Istanbul_Stock_Exchange"
         data = pd.read_csv(f"{data_dir}/data_akbilgic_extracted", index_col=False)
-        scaler = MinMaxScaler()
-        data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
+
 
     elif dataset_name == "beijing":
         data_dir = f"{working_dir}/DataLoaders/Datasets/beijing_pm_2.5"
         data = pd.read_csv(f"{data_dir}/PRSA_data_extracted.csv", index_col=False)
-        scaler = MinMaxScaler()
-        data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
+
 
     data_dict = {}
     if type(data) == list:

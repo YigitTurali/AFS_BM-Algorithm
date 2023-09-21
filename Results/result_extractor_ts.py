@@ -25,17 +25,17 @@ def set_random_seeds(seed):
 
 
 working_dir = os.getcwd()
-fs_lgbm_loss = np.concatenate([np.load(working_dir + '/TimeSeries/test_fs_lgbm_model_loss_0-57.npy'),
-                               np.load(working_dir + '/TimeSeries/test_fs_lgbm_model_loss.npy')])
+fs_lgbm_loss = np.concatenate([np.load(working_dir + '/Regression/test_fs_lgbm_model_loss_0-57.npy'),
+                               np.load(working_dir + '/Regression/test_fs_lgbm_model_loss.npy')])
 
-fs_xgb_loss = np.concatenate([np.load(working_dir + '/TimeSeries/test_fs_xgb_model_loss_0-57.npy'),
-                              np.load(working_dir + '/TimeSeries/test_fs_xgb_model_loss.npy')])
+fs_xgb_loss = np.concatenate([np.load(working_dir + '/Regression/test_fs_xgb_model_loss_0-57.npy'),
+                              np.load(working_dir + '/Regression/test_fs_xgb_model_loss.npy')])
 
-vanilla_lgbm_loss = np.concatenate([np.load(working_dir + '/TimeSeries/test_lgbm_baseline_loss_0-57.npy'),
-                                    np.load(working_dir + '/TimeSeries/test_lgbm_baseline_loss.npy')])
+vanilla_lgbm_loss = np.concatenate([np.load(working_dir + '/Regression/test_lgbm_baseline_loss_0-57.npy'),
+                                    np.load(working_dir + '/Regression/test_lgbm_baseline_loss.npy')])
 
-vanilla_xgb_loss = np.concatenate([np.load(working_dir + '/TimeSeries/test_xgboost_baseline_loss_0-57.npy'),
-                                   np.load(working_dir + '/TimeSeries/test_xgboost_baseline_loss.npy')])
+vanilla_xgb_loss = np.concatenate([np.load(working_dir + '/Regression/test_xgboost_baseline_loss_0-57.npy'),
+                                   np.load(working_dir + '/Regression/test_xgboost_baseline_loss.npy')])
 
 set_random_seeds(888)
 random_list_1 = np.random.choice(len(fs_lgbm_loss), size=100)

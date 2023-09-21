@@ -68,7 +68,7 @@ class Feature_Selector_XGB:
     """Feature selection using XgBoost."""
 
     def __init__(self, params, param_grid, X_train, X_val, X_val_mask, X_test, y_train, y_val, y_val_mask, y_test,
-                 data_type):
+                 data_type,dir_name):
         self.params = params
         self.param_grid = param_grid
         self.X_train = X_train
@@ -81,6 +81,7 @@ class Feature_Selector_XGB:
         self.y_test = y_test
         self.data_type = data_type
         self.num_of_features = self.X_train.shape[1]
+        self.dir_name = dir_name
 
         self.mask = np.ones(self.X_train.shape[1])
 
@@ -259,10 +260,10 @@ class Feature_Selector_XGB:
         date = date.replace(":", "_")
         date = date.replace(".", "_")
         np.save(
-            f"Results/Classification/aca_classification/fs_model/preds_fs_xgb_{date}.npy",
+            f"Results/{self.dir_name}/fs_model/preds_fs_xgb_{date}.npy",
             y_hat)
         np.save(
-            f"Results/Classification/aca_classification/fs_model/targets_{date}.npy",
+            f"Results/{self.dir_name}/fs_model/targets_{date}.npy",
             self.xgbM_Selector.y_test)
 
         return test_loss.item()
