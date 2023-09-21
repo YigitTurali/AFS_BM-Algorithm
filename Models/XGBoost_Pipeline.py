@@ -63,10 +63,10 @@ class Baseline_XgBoost_Model:
         date = date.replace(".", "_")
 
         np.save(
-            f"Results/TimeSeries/m4_daily/fs_model/preds_baseline_xgb_{date}.npy",
+            f"Results/TimeSeries/m4_daily/preds/baseline_model/preds_baseline_xgb_{date}.npy",
             self.y_pred)
         np.save(
-            f"Results/TimeSeries/m4_daily/fs_model/targets_{date}.npy",
+            f"Results/TimeSeries/m4_daily/preds/baseline_model/targets_{date}.npy",
             self.y_test)
 
         print("Test Loss for Baseline XGBoost: ", self.loss)

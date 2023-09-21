@@ -261,10 +261,10 @@ class Feature_Selector_XGB:
         date = date.replace(":", "_")
         date = date.replace(".", "_")
         np.save(
-            f"Results/TimeSeries/m4_daily/fs_model/preds_fs_xgb_{date}.npy",
+            f"Results/TimeSeries/m4_daily/preds/fs_model/preds_fs_xgb_{date}.npy",
             y_hat)
         np.save(
-            f"Results/TimeSeries/m4_daily/fs_model/targets_{date}.npy",
+            f"Results/TimeSeries/m4_daily/preds/fs_model/targets_{date}.npy",
             self.xgbM_Selector.y_test)
 
         return test_loss.item()

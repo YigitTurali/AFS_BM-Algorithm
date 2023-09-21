@@ -67,9 +67,9 @@ class Baseline_LightGBM_Model:
         date = date.replace(".", "_")
 
         np.save(
-            f"Results/TimeSeries/m4_daily/fs_model/preds_baseline_lgbm_{date}.npy",np.asarray(self.y_pred))
+            f"Results/TimeSeries/m4_daily/preds/baseline_model/preds_baseline_lgbm_{date}.npy",np.asarray(self.y_pred))
         np.save(
-            f"Results/TimeSeries/m4_daily/fs_model/targets_{date}.npy",np.asarray(self.y_test))
+            f"Results/TimeSeries/m4_daily/preds/baseline_model/targets_{date}.npy",np.asarray(self.y_test))
 
         print(f"Test Loss for Baseline LGBM: {self.loss}")
         return self.loss
