@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
             baseline_network_xgboost = Baseline_XgBoost_Model(
                 params={"boosting_type": "gbdt", "importance_type": "gain",
-                        "verbosity": -1},
+                        "verbosity": 0},
                 param_grid={
                     'boosting_type': ['gbdt'],
                     'num_leaves': [10, 20],
