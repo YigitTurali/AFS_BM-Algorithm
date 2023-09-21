@@ -1,5 +1,4 @@
 import datetime
-
 import numpy as np
 import xgboost as xgb
 from sklearn.metrics import log_loss, mean_squared_error

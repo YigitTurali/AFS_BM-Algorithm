@@ -1,6 +1,6 @@
 import random
 import warnings
-from datetime import datetime
+import datetime
 
 import numpy as np
 import torch
