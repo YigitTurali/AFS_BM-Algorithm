@@ -26,6 +26,20 @@ def Create_Dataset(dataset_name, val_ratio=0.2,
         data_dir = f"{working_dir}/DataLoaders/Datasets/Diabetes"
         data = [x for x in os.listdir(data_dir) if "data-" in x]
 
+    elif dataset_name == "appliances":
+        data_dir = f"{working_dir}/DataLoaders/Datasets/Appliances_Energy_Prediction"
+        data = pd.read_csv(f"{data_dir}/energydata_complete_extracted.csv", index_col=False)
+
+
+    elif dataset_name == "ise":
+        data_dir = f"{working_dir}/DataLoaders/Datasets/Istanbul_Stock_Exchange"
+        data = pd.read_csv(f"{data_dir}/data_akbilgic_extracted.csv", index_col=False)
+
+
+    elif dataset_name == "beijing":
+        data_dir = f"{working_dir}/DataLoaders/Datasets/beijing_pm_2.5"
+        data = pd.read_csv(f"{data_dir}/PRSA_data_extracted.csv", index_col=False)
+
     elif dataset_name == "statlog_aca":
         data_dir = f"{working_dir}/DataLoaders/Datasets/statlog_aca"
         data = pd.read_csv(f"{data_dir}/australian.csv",index_col=False)
@@ -40,20 +54,12 @@ def Create_Dataset(dataset_name, val_ratio=0.2,
                               columns=["X2", "X4", "X10"])
         data[["X2", "X4", "X10"]] = data_t
 
-    elif dataset_name == "appliances":
-        data_dir = f"{working_dir}/DataLoaders/Datasets/Appliances_Energy_Prediction"
-        data = pd.read_csv(f"{data_dir}/energydata_complete_extracted.csv", index_col=False)
-
-
-    elif dataset_name == "ise":
-        data_dir = f"{working_dir}/DataLoaders/Datasets/Istanbul_Stock_Exchange"
-        data = pd.read_csv(f"{data_dir}/data_akbilgic_extracted", index_col=False)
-
-
-    elif dataset_name == "beijing":
-        data_dir = f"{working_dir}/DataLoaders/Datasets/beijing_pm_2.5"
-        data = pd.read_csv(f"{data_dir}/PRSA_data_extracted.csv", index_col=False)
-
+    elif dataset_name == "darwin":
+        data_dir = f"{working_dir}/DataLoaders/Datasets/darwin"
+        data = pd.read_csv(f"{data_dir}/DARWIN.csv", index_col="ID")
+        data["y"] = [1 if x == "P" else 0 for x in data["y"]]
+        scaler = MinMaxScaler()
+        data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
 
     data_dict = {}
     if type(data) == list:
@@ -102,15 +108,26 @@ def Create_Dataset(dataset_name, val_ratio=0.2,
     else:
         X = data
         y = X.pop("y")
+        if dataset_name == "statlog_aca" or dataset_name == "statlog_gcd" or dataset_name == "darwin":
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=val_ratio + test_ratio + mask_ratio,
+                                                                random_state=42,shuffle=True, stratify=y)
+            X_val, X_test, y_val, y_test = train_test_split(X_test, y_test,
+                                                            test_size=test_ratio / (val_ratio + test_ratio + mask_ratio),
+                                                            random_state=42,shuffle=True, stratify=y_test)
+            X_val_mask, X_val, y_val_mask, y_val = train_test_split(X_val, y_val,
+                                                                    test_size=mask_ratio / (val_ratio + mask_ratio),
+                                                                    random_state=42,shuffle=True, stratify=y_val)
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=val_ratio + test_ratio + mask_ratio,
-                                                            random_state=42)
-        X_val, X_test, y_val, y_test = train_test_split(X_test, y_test,
-                                                        test_size=test_ratio / (val_ratio + test_ratio + mask_ratio),
-                                                        random_state=42)
-        X_val_mask, X_val, y_val_mask, y_val = train_test_split(X_val, y_val,
-                                                                test_size=mask_ratio / (val_ratio + mask_ratio),
+        else:
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=val_ratio + test_ratio + mask_ratio,
                                                                 random_state=42)
+            X_val, X_test, y_val, y_test = train_test_split(X_test, y_test,
+                                                            test_size=test_ratio / (
+                                                                    val_ratio + test_ratio + mask_ratio),
+                                                            random_state=42)
+            X_val_mask, X_val, y_val_mask, y_val = train_test_split(X_val, y_val,
+                                                                    test_size=mask_ratio / (val_ratio + mask_ratio),
+                                                                    random_state=42)
 
         data_dict["X_train"] = X_train
         data_dict["X_val"] = X_val
