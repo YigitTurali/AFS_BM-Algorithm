@@ -25,20 +25,26 @@ def Create_Dataset(dataset_name, val_ratio=0.2,
     elif dataset_name == "Diabetes":
         data_dir = f"{working_dir}/DataLoaders/Datasets/Diabetes"
         data = [x for x in os.listdir(data_dir) if "data-" in x]
+        scaler = MinMaxScaler()
+        data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
 
     elif dataset_name == "appliances":
         data_dir = f"{working_dir}/DataLoaders/Datasets/Appliances_Energy_Prediction"
         data = pd.read_csv(f"{data_dir}/energydata_complete_extracted.csv", index_col=False)
-
+        scaler = MinMaxScaler()
+        data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
 
     elif dataset_name == "ise":
         data_dir = f"{working_dir}/DataLoaders/Datasets/Istanbul_Stock_Exchange"
         data = pd.read_csv(f"{data_dir}/data_akbilgic_extracted.csv", index_col=False)
-
+        # scaler = MinMaxScaler()
+        # data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
 
     elif dataset_name == "beijing":
         data_dir = f"{working_dir}/DataLoaders/Datasets/beijing_pm_2.5"
         data = pd.read_csv(f"{data_dir}/PRSA_data_extracted.csv", index_col=False)
+        scaler = MinMaxScaler()
+        data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
 
     elif dataset_name == "statlog_aca":
         data_dir = f"{working_dir}/DataLoaders/Datasets/statlog_aca"

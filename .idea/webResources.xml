@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebResourcesPaths">
+    <contentEntries>
+      <entry url="file://$PROJECT_DIR$">
+        <entryData>
+          <resourceRoots>
+            <path value="file://$PROJECT_DIR$/Results/Regression/m4_daily" />
+            <path value="file://$PROJECT_DIR$/Results/Regression/ise" />
+            <path value="file://$PROJECT_DIR$/Results/Regression/beijing" />
+            <path value="file://$PROJECT_DIR$/Results/Regression/air_quality" />
+            <path value="file://$PROJECT_DIR$/Results/Classification/darwin" />
+          </resourceRoots>
+        </entryData>
+      </entry>
+    </contentEntries>
+  </component>
+</project>

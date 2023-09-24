@@ -172,8 +172,8 @@ class Feature_Selector_LGBM:
                     if mask_loss_cache[-2] == 0:
                         mask_loss_cache[-2] = 1e-5
 
-                    if (mask_loss_cache[-1] - mask_loss_cache[-2]) / mask_loss_cache[-2] > 0.01 or \
-                            (mask_loss_cache[-1] - mask_loss_cache[0]) / mask_loss_cache[0] > 0.01:
+                    if (mask_loss_cache[-1] - mask_loss_cache[-2]) / mask_loss_cache[-2] > 0.02 or \
+                            (mask_loss_cache[-1] - mask_loss_cache[0]) / mask_loss_cache[0] > 0.02:
                         LightGBM_Selector.mask[random_idx] = 1
                         mask_loss_cache.pop()
                         mask_optim_patience += 1

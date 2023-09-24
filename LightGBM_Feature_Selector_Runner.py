@@ -291,11 +291,11 @@ if __name__ == '__main__':
             print("Test Loss for Baseline XGBoost: ", test_xgboost_baseline_loss[-1])
             print("------------------------------------------------------------------")
 
-            np.save(f"Results/Regression/{dataset_name}/test_fs_lgbm_model_loss3.npy",
+            np.save(f"Results/Regression/{dataset_name}/test_fs_lgbm_model_loss.npy",
                     np.asarray(test_fs_lgbm_model_loss))
-            np.save(f"Results/Regression/{dataset_name}/test_fs_xgb_model_loss3.npy",
+            np.save(f"Results/Regression/{dataset_name}/test_fs_xgb_model_loss.npy",
                     np.asarray(test_fs_xgb_model_loss))
-            np.save(f"Results/Regression/{dataset_name}/test_lgbm_baseline_loss3.npy",
+            np.save(f"Results/Regression/{dataset_name}/test_lgbm_baseline_loss.npy",
                     np.asarray(test_lgbm_baseline_loss))
-            np.save(f"Results/Regression/{dataset_name}/test_xgboost_baseline_loss3.npy",
+            np.save(f"Results/Regression/{dataset_name}/test_xgboost_baseline_loss.npy",
                     np.asarray(test_xgboost_baseline_loss))
