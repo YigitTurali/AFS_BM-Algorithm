@@ -36,7 +36,7 @@ class Cross_Corr_XGB:
             self.criterion = self.mean_squared_error
 
     def Calc_Cross_Corr(self):
-        dataset = np.concatenate((self.X_train, self.y_train), axis=1)
+        dataset = pd.concat([self.X_train,pd.DataFrame(self.y_train,columns=["y"])],axis=1)
         correlations = pd.DataFrame(dataset).corr()['y'].drop('y')
         threshold = 0.25
         selected_features = correlations[correlations.abs() > threshold].index.tolist()
@@ -49,7 +49,7 @@ class Cross_Corr_XGB:
         self.Calc_Cross_Corr()
 
         random_search = RandomizedSearchCV(self.base_model, param_distributions=self.param_grid, n_iter=15, cv=5,
-                                           verbose=-1, n_jobs=-1)
+                                           verbose=-1, n_jobs=-1 ,error_score=1.0)
         random_search.fit(self.X_train, self.y_train, eval_set=[(self.X_val, self.y_val)], verbose=False)
         self.best_params = random_search.best_params_
         self.searched_trained_model = random_search.best_estimator_
@@ -78,13 +78,13 @@ class Cross_Corr_XGB:
         date = date.replace(".", "_")
 
         np.save(
-            f"Results/{self.dir_name}/baseline_model/preds_baseline_xgb_{date}.npy",
+            f"Results/{self.dir_name}/greedy_model/preds_cross_corr_xgb_{date}.npy",
             self.y_pred)
         np.save(
-            f"Results/{self.dir_name}/baseline_model/targets_{date}.npy",
+            f"Results/{self.dir_name}/greedy_model/targets_{date}.npy",
             self.y_test)
 
-        print("Test Loss for Baseline XGBoost: ", self.loss)
+        print("Test Loss for Cross Correlation XGBoost: ", self.loss)
         return self.loss
 
     @staticmethod

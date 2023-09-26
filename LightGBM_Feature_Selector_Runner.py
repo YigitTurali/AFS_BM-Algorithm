@@ -58,6 +58,7 @@ if __name__ == '__main__':
         os.makedirs("Results/" + directory_name)
         os.makedirs("Results/" + directory_name + "/fs_model")
         os.makedirs("Results/" + directory_name + "/baseline_model")
+        os.makedirs("Results/" + directory_name + "/greedy_model")
         print("Directory created successfully")
     else:
         print("Directory already exists")
@@ -494,67 +495,72 @@ if __name__ == '__main__':
 
             rfe_lgbm.Train_with_RandomSearch()
             test_lgbm_rfe_loss.append(rfe_lgbm.Test_Network())
+            if count == 96:
+                test_xgboost_rfe_loss.append(1)
+                test_xgboost_mutual_inf_loss.append(1)
+                test_xgboost_cross_corr_loss.append(1)
 
-            cross_corr_xgb = Cross_Corr_XGB(
-                params={"boosting_type": "gbdt", "importance_type": "gain",
-                        "verbosity": 0},
-                param_grid={
-                    'boosting_type': ['gbdt'],
-                    'num_leaves': [10, 20],
-                    'learning_rate': [0.01, 0.1, 0.5],
-                    'n_estimators': [5, 10, 20],
-                    'subsample': [0.6, 0.8, 1.0],
-                    'colsample_bytree': [0.6, 0.8, 1.0],
-                    # 'reg_alpha': [0.0, 0.1, 0.5],
-                    # 'reg_lambda': [0.0, 0.1, 0.5],
-                    'min_child_samples': [5, 10],
-                },
-                X_train=X_train, X_val=X_val, X_test=X_test,
-                y_train=y_train, y_val=y_val, y_test=y_test,
-                data_type="Regression", dir_name=directory_name)
+            else:
+                cross_corr_xgb = Cross_Corr_XGB(
+                    params={"boosting_type": "gbdt", "importance_type": "gain",
+                            "verbosity": 0},
+                    param_grid={
+                        'boosting_type': ['gbdt'],
+                        'num_leaves': [10, 20],
+                        'learning_rate': [0.01, 0.1, 0.5],
+                        'n_estimators': [5, 10, 20],
+                        'subsample': [0.6, 0.8, 1.0],
+                        'colsample_bytree': [0.6, 0.8, 1.0],
+                        # 'reg_alpha': [0.0, 0.1, 0.5],
+                        # 'reg_lambda': [0.0, 0.1, 0.5],
+                        'min_child_samples': [5, 10],
+                    },
+                    X_train=X_train, X_val=X_val, X_test=X_test,
+                    y_train=y_train, y_val=y_val, y_test=y_test,
+                    data_type="Regression", dir_name=directory_name)
 
-            cross_corr_xgb.Train_with_RandomSearch()
-            test_xgboost_cross_corr_loss.append(cross_corr_xgb.Test_Network())
+                cross_corr_xgb.Train_with_RandomSearch()
+                test_xgboost_cross_corr_loss.append(cross_corr_xgb.Test_Network())
 
-            mutual_inf_xgb = Mutual_Inf_XGB(params={"boosting_type": "gbdt", "importance_type": "gain",
-                                                    "verbosity": 0},
-                                            param_grid={
-                                                'boosting_type': ['gbdt'],
-                                                'num_leaves': [10, 20],
-                                                'learning_rate': [0.01, 0.1, 0.5],
-                                                'n_estimators': [5, 10, 20],
-                                                'subsample': [0.6, 0.8, 1.0],
-                                                'colsample_bytree': [0.6, 0.8, 1.0],
-                                                # 'reg_alpha': [0.0, 0.1, 0.5],
-                                                # 'reg_lambda': [0.0, 0.1, 0.5],
-                                                'min_child_samples': [5, 10],
-                                            },
-                                            X_train=X_train, X_val=X_val, X_test=X_test,
-                                            y_train=y_train, y_val=y_val, y_test=y_test,
-                                            data_type="Regression", dir_name=directory_name)
+                mutual_inf_xgb = Mutual_Inf_XGB(params={"boosting_type": "gbdt", "importance_type": "gain",
+                                                        "verbosity": 0},
+                                                param_grid={
+                                                    'boosting_type': ['gbdt'],
+                                                    'num_leaves': [10, 20],
+                                                    'learning_rate': [0.01, 0.1, 0.5],
+                                                    'n_estimators': [5, 10, 20],
+                                                    'subsample': [0.6, 0.8, 1.0],
+                                                    'colsample_bytree': [0.6, 0.8, 1.0],
+                                                    # 'reg_alpha': [0.0, 0.1, 0.5],
+                                                    # 'reg_lambda': [0.0, 0.1, 0.5],
+                                                    'min_child_samples': [5, 10],
+                                                },
+                                                X_train=X_train, X_val=X_val, X_test=X_test,
+                                                y_train=y_train, y_val=y_val, y_test=y_test,
+                                                data_type="Regression", dir_name=directory_name)
 
-            mutual_inf_xgb.Train_with_RandomSearch()
-            test_xgboost_mutual_inf_loss.append(mutual_inf_xgb.Test_Network())
+                mutual_inf_xgb.Train_with_RandomSearch()
+                test_xgboost_mutual_inf_loss.append(mutual_inf_xgb.Test_Network())
 
-            rfe_xgb = RFE_XGB(params={"boosting_type": "gbdt", "importance_type": "gain",
-                                      "verbosity": 0},
-                              param_grid={
-                                  'boosting_type': ['gbdt'],
-                                  'num_leaves': [10, 20],
-                                  'learning_rate': [0.01, 0.1, 0.5],
-                                  'n_estimators': [5, 10, 20],
-                                  'subsample': [0.6, 0.8, 1.0],
-                                  'colsample_bytree': [0.6, 0.8, 1.0],
-                                  # 'reg_alpha': [0.0, 0.1, 0.5],
-                                  # 'reg_lambda': [0.0, 0.1, 0.5],
-                                  'min_child_samples': [5, 10],
-                              },
-                              X_train=X_train, X_val=X_val, X_test=X_test,
-                              y_train=y_train, y_val=y_val, y_test=y_test,
-                              data_type="Regression", dir_name=directory_name)
+                rfe_xgb = RFE_XGB(params={"boosting_type": "gbdt", "importance_type": "gain",
+                                          "verbosity": 0},
+                                  param_grid={
+                                      'boosting_type': ['gbdt'],
+                                      'num_leaves': [10, 20],
+                                      'learning_rate': [0.01, 0.1, 0.5],
+                                      'n_estimators': [5, 10, 20],
+                                      'subsample': [0.6, 0.8, 1.0],
+                                      'colsample_bytree': [0.6, 0.8, 1.0],
+                                      # 'reg_alpha': [0.0, 0.1, 0.5],
+                                      # 'reg_lambda': [0.0, 0.1, 0.5],
+                                      'min_child_samples': [5, 10],
+                                  },
+                                  X_train=X_train, X_val=X_val, X_test=X_test,
+                                  y_train=y_train, y_val=y_val, y_test=y_test,
+                                  data_type="Regression", dir_name=directory_name)
 
-            rfe_xgb.Train_with_RandomSearch()
-            test_xgboost_rfe_loss.append(rfe_xgb.Test_Network())
+                rfe_xgb.Train_with_RandomSearch()
+                test_xgboost_rfe_loss.append(rfe_xgb.Test_Network())
 
             print("------------------------------------------------------------------")
             # print("Test Loss for Feature Selector LGBM: ", test_fs_lgbm_model_loss[-1])

@@ -39,7 +39,7 @@ class Mutual_Inf_XGB:
 
     def MI_Feature_Selection(self):
         """Perform mutual information feature selection."""
-        dataset = pd.DataFrame(np.concatenate((self.X_train, self.y_train), axis=1))
+        dataset = pd.concat([self.X_train,pd.DataFrame(self.y_train,columns=["y"])],axis=1)
         if self.data_type == "Classification":
             mi = mutual_info_classif(dataset.drop('y', axis=1), dataset['y'])
             mi_series = pd.Series(mi, index=dataset.columns[:-1])
@@ -48,10 +48,10 @@ class Mutual_Inf_XGB:
             mi = mutual_info_regression(dataset.drop('y', axis=1), dataset['y'])
             mi_series = pd.Series(mi, index=dataset.columns[:-1])
 
-        selected_features = mi_series.sort_values(ascending=False).head(5).index.tolist()
-        self.X_train = self.X_train[:, selected_features]
-        self.X_val = self.X_val[:, selected_features]
-        self.X_test = self.X_test[:, selected_features]
+        selected_features = mi_series.sort_values(ascending=False).head(8).index.tolist()
+        self.X_train = self.X_train[selected_features]
+        self.X_val = self.X_val[selected_features]
+        self.X_test = self.X_test[selected_features]
 
     def Train_with_RandomSearch(self):
         """Train the model using random search for hyperparameter optimization."""
@@ -85,13 +85,13 @@ class Mutual_Inf_XGB:
         date = date.replace(".", "_")
 
         np.save(
-            f"Results/{self.dir_name}/baseline_model/preds_baseline_xgb_{date}.npy",
+            f"Results/{self.dir_name}/greedy_model/preds_mutual_inf_xgb_{date}.npy",
             self.y_pred)
         np.save(
-            f"Results/{self.dir_name}/baseline_model/targets_{date}.npy",
+            f"Results/{self.dir_name}/greedy_model/targets_{date}.npy",
             self.y_test)
 
-        print("Test Loss for Baseline XGBoost: ", self.loss)
+        print("Test Loss for Mutual Information XGBoost: ", self.loss)
         return self.loss
 
     @staticmethod

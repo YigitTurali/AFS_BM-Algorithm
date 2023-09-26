@@ -36,7 +36,7 @@ class Cross_Corr_LightGBM:
 
     def Calc_Cross_Corr(self):
         """Calculate the cross correlation between features and target."""
-        dataset = np.concatenate((self.X_train,self.y_train),axis=1)
+        dataset = pd.concat([self.X_train,pd.DataFrame(self.y_train,columns=["y"])],axis=1)
         correlations = pd.DataFrame(dataset).corr()['y'].drop('y')
         threshold = 0.25
         selected_features = correlations[correlations.abs() > threshold].index.tolist()
@@ -83,12 +83,12 @@ class Cross_Corr_LightGBM:
         date = date.replace(".", "_")
 
         np.save(
-            f"Results/{self.dir_name}/baseline_model/preds_baseline_lgbm_{date}.npy",
+            f"Results/{self.dir_name}/greedy_model/preds_cross_corr_lgbm_{date}.npy",
             self.y_pred)
         np.save(
-            f"Results/{self.dir_name}/baseline_model/targets_{date}.npy",
+            f"Results/{self.dir_name}/greedy_model/targets_{date}.npy",
             self.y_test)
-        print(f"Test Loss for Baseline LGBM: {self.loss}")
+        print(f"Test Loss for Cross Correlation LGBM: {self.loss}")
         return self.loss
 
     @staticmethod

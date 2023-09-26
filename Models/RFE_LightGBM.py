@@ -24,14 +24,14 @@ class RFE_LightGBM:
 
         if data_type == "Classification":
             self.base_model = lgb.LGBMClassifier(**self.params)
-            self.base_model.perform_RFE(n_features_to_select=5)
+            self.base_model.perform_RFE(n_features_to_select=8)
             self.params["eval_metric"] = ["logloss"]
             self.params["objective"] = ["binary"]
             self.criterion = self.cross_entropy
 
         else:
             self.base_model = lgb.LGBMRegressor(**self.params)
-            self.base_model.perform_RFE(n_features_to_select=5)
+            self.perform_RFE(n_features_to_select=8)
             self.params["eval_metric"] = ["l2"]
             self.params["objective"] = ["regression"]
             self.criterion = self.mean_squared_error
@@ -47,9 +47,11 @@ class RFE_LightGBM:
 
         # Optionally, you can reduce the dataset to the selected features
         if n_features_to_select:
-            self.X_train = self.X_train[:, self.feature_support_]
-            self.X_val = self.X_val[:, self.feature_support_]
-            self.X_test = self.X_test[:, self.feature_support_]
+            features = np.array(self.X_train.columns)*self.feature_support_
+            features = features[features != ""]
+            self.X_train = self.X_train[features]
+            self.X_val = self.X_val[features]
+            self.X_test = self.X_test[features]
 
     def Train_with_RandomSearch(self):
         """Train the model using random search for hyperparameter optimization."""
@@ -86,12 +88,12 @@ class RFE_LightGBM:
         date = date.replace(".", "_")
 
         np.save(
-            f"Results/{self.dir_name}/baseline_model/preds_baseline_lgbm_{date}.npy",
+            f"Results/{self.dir_name}/greedy_model/preds_rfe_lgbm_{date}.npy",
             self.y_pred)
         np.save(
-            f"Results/{self.dir_name}/baseline_model/targets_{date}.npy",
+            f"Results/{self.dir_name}/greedy_model/targets_{date}.npy",
             self.y_test)
-        print(f"Test Loss for Baseline LGBM: {self.loss}")
+        print(f"Test Loss for RFE LGBM: {self.loss}")
         return self.loss
 
     @staticmethod
