@@ -1,17 +1,17 @@
+import datetime
 import random
 import warnings
-
+from sklearn.exceptions import ConvergenceWarning
 import numpy as np
-import plotly.graph_objects as go
 import torch
-import torch.nn as nn
-from sklearn.metrics import classification_report, accuracy_score
-
-from DataLoaders.Dataset_Picker import Create_Dataset
-from DataLoaders.classification_dataloader import TorchDataset
+from sklearn.metrics import classification_report, accuracy_score, log_loss, mean_squared_error
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+from sklearn.neural_network import MLPClassifier, MLPRegressor
 
 # Suppress warnings
 warnings.filterwarnings("ignore")
+warnings.filterwarnings('ignore', category=ConvergenceWarning)
+ConvergenceWarning('ignore')
 
 
 def set_random_seeds(seed):
@@ -31,6 +31,9 @@ def set_random_seeds(seed):
     # You can add more libraries or functions here, if needed
 
     print(f"Seeds have been set to {seed} for all random number generators.")
+
+
+set_random_seeds(222)
 
 
 class MaskedEarlyStopping:
@@ -66,43 +69,13 @@ class MaskedEarlyStopping:
         self.prev_val_loss = mask
 
 
-class EarlyStopping:
-    def __init__(self, patience=5, delta=0, patience_no_change=5):
-        self.patience = patience
-        self.delta = delta
-        self.patience_no_change = patience_no_change
-        self.counter = 0
-        self.best_score = None
-        self.early_stop = False
-        self.prev_val_loss = None
-        self.losses = []
-
-    def __call__(self, val_loss):
-        """Check for early stopping criteria."""
-        if self.best_score is None:
-            self.best_score = val_loss
-            self.prev_val_loss = val_loss
-        elif val_loss > self.prev_val_loss:
-            self.counter += 1
-            self.losses.append(val_loss)
-            if self.counter >= self.patience_no_change:
-                self.early_stop = True
-        else:
-            self.counter = 0
-            self.best_score = val_loss
-            self.prev_val_loss = val_loss
-
-
 class Feature_Selector_MLP:
-    def __init__(self, X_train, X_val, X_val_mask, X_test, y_train, y_val, y_val_mask, y_test,
-                 dropout, input_size, hidden_size, output_size, lr, epochs, device,train_type):
-        self.dropout = dropout
-        self.input_size = input_size
-        self.hidden_size = hidden_size
-        self.output_size = output_size
-        self.lr = lr
-        self.MAX_EPOCHS = epochs
-        self.device = device
+    """Feature selection using MLP."""
+
+    def __init__(self, params, param_grid, X_train, X_val, X_val_mask, X_test, y_train, y_val, y_val_mask, y_test,
+                 data_type, dir_name):
+        self.params = params
+        self.param_grid = param_grid
         self.X_train = X_train
         self.y_train = y_train
         self.X_val = X_val
@@ -111,244 +84,256 @@ class Feature_Selector_MLP:
         self.y_val_mask = y_val_mask
         self.X_test = X_test
         self.y_test = y_test
-        self.train_type = train_type
+        self.data_type = data_type
+        self.num_of_features = self.X_train.shape[1]
+        self.dir_name = dir_name
 
-    def create_dataloaders(self, indicator):
-        self.model = FeatureSelectorMLP(self.X_train, self.X_val, self.X_val_mask, self.X_test, self.y_train,
-                                        self.y_val,
-                                        self.y_val_mask, self.y_test, self.dropout, self.input_size, self.hidden_size,
-                                        self.output_size)
-        if indicator:
-            self.X_train, self.X_val, self.X_val_mask, self.X_test, self.y_train, self.y_val, self.y_val_mask, self.y_test = Create_Dataset()
+        self.mask = np.ones(self.X_train.shape[1])
 
-        self.train_dataset = TorchDataset(torch.from_numpy(self.X_train).float() * self.model.mask_vec,
-                                                   torch.from_numpy(self.y_train).float())
-        self.val_dataset = TorchDataset(torch.from_numpy(self.X_val).float() * self.model.mask_vec,
-                                                 torch.from_numpy(self.y_val).float())
-        self.test_dataset = TorchDataset(torch.from_numpy(self.X_test).float() * self.model.mask_vec,
-                                                  torch.from_numpy(self.y_test).float())
+        if data_type == "Classification":
+            self.base_model = MLPClassifier(**self.params, validation_fraction=0.2)
 
-        self.train_dataloader = torch.utils.data.DataLoader(self.train_dataset, batch_size=32, shuffle=True)
-        self.val_dataloader = torch.utils.data.DataLoader(self.val_dataset, batch_size=len(self.val_dataset),
-                                                          shuffle=True)
-        self.test_dataloader = torch.utils.data.DataLoader(self.test_dataset, batch_size=len(self.test_dataset),
-                                                           shuffle=True)
+        else:
+            self.base_model = MLPRegressor(**self.params, validation_fraction=0.2)
 
     def fit_network(self):
-        """Fit the network to the training data."""
+        """Fit the MLP model and perform feature selection."""
         mask_cache = []
         train_loss_cache = []
-        val_loss_cache = []
         mask_loss_cache = []
         full_loss_cache = []
         final_loss_cache = []
         mask_optim_patience = 0
         iter = 0
+        stop_mask = 0
         training_iter = 0
-        indicator = True
-        self.create_dataloaders(indicator)
-        self.mask_val_dataset = TorchDataset(
-            torch.from_numpy(self.X_val_mask).float() * self.model.mask_vec,
-            torch.from_numpy(self.y_val_mask).float())
-        self.mask_val_dataloader = torch.utils.data.DataLoader(self.mask_val_dataset,
-                                                               batch_size=len(self.mask_val_dataset),
-                                                               shuffle=True)
-        early_stopping_mask = MaskedEarlyStopping(patience=5, delta=0.001)
+        self.MAX_TRAINING_ITERATIONS = 2 * self.X_train.shape[1]
+
+        MLP_Selector = MLP_Model(self.params, self.param_grid,
+                                 self.X_train, self.X_val, self.X_val_mask, self.X_test,
+                                 self.y_train, self.y_val, self.y_val_mask, self.y_test,
+                                 self.data_type)
+
+        early_stopping = MaskedEarlyStopping(patience=5, delta=0.001)
         while True:
-            self.create_dataloaders(indicator)
-            indicator = False
-            self.model = FeatureSelectorMLP(self.dropout, self.input_size, self.hidden_size, self.output_size)
-            self.model.to(self.device)
-            if self.train_type == "classification":
-                self.criterion = nn.BCELoss()
-
+            MLP_Selector.create_masked_datasets()
+            if self.data_type == "Classification":
+                self.criterion = MLP_Selector.cross_entropy
             else:
-                self.criterion = nn.MSELoss()
+                self.criterion = MLP_Selector.mean_squared_error
 
+            # Train the model
+            MLP_Selector.Train_with_RandomSearch()
+            self.model = MLP_Selector.searched_trained_model
+            self.model = MLP_Selector.searched_trained_model
 
-            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
-            self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, patience=3, verbose=True)
-            epoch = 0
-            early_stopping = EarlyStopping(patience=5, delta=0.001)
-            while epoch < self.MAX_EPOCHS:
-                self.model.train()
-                train_loss = 0.0
-                for batch_idx, (data, target) in enumerate(self.train_dataloader):
-                    data, target = data.to(self.device), target.to(self.device)
-                    self.optimizer.zero_grad()
-                    output = self.model(data)
-                    loss = self.criterion(output.squeeze(), target.double())
-                    loss.backward()
-                    train_loss_cache.append(loss.item())
-                    train_loss += loss.item()
-                    self.optimizer.step()
-                self.scheduler.step(loss)
-                print('Epoch: {} \tLoss: {:.6f}'.format(epoch, train_loss))
+            if self.data_type == "Classification":
+                y_hat_after_train = self.model.predict_proba(MLP_Selector.masked_X_val)
+            else:
+                y_hat_after_train = self.model.predict(MLP_Selector.masked_X_val)
 
-                self.model.eval()
-                with torch.no_grad():
-                    for batch_idx, (data, target) in enumerate(self.val_dataloader):
-                        data, target = data.to(self.device), target.to(self.device)
-                        output = self.model(data)
-                        val_loss = self.criterion(output.squeeze(), target.double())
-                        val_loss_cache.append(val_loss.item())
-                        print('Epoch: {} \tValidation Loss: {:.6f}'.format(epoch, val_loss.item()))
-                print("----------------------------------------------")
-                train_loss /= len(self.train_dataloader.dataset)
-                print("Training Loss: ", train_loss)
-                val_loss /= len(self.val_dataloader.dataset)
-                print("Validation Loss: ", val_loss)
-                print("----------------------------------------------")
-                # Check for early stopping
-                early_stopping(val_loss)
-                epoch += 1
-                if early_stopping.early_stop:
-                    print("Early stopping")
-                    break
-
-            print("Training and Weight Optimization Complete")
+            loss_after_train = self.criterion(y_hat_after_train, MLP_Selector.masked_y_val)
+            # Update the training iteration
+            train_loss_cache.append(loss_after_train.item())
+            print('Training Iteration: {} \tLoss: {:.6f}'.format(training_iter, loss_after_train))
+            print("Training Iteration Complete")
             training_iter += 1
 
-            self.mask_val_dataset = TorchDataset(
-                torch.from_numpy(self.X_val_mask).float() * self.model.mask_vec,
-                torch.from_numpy(self.y_val_mask).float())
-            self.mask_val_dataloader = torch.utils.data.DataLoader(self.mask_val_dataset,
-                                                                   batch_size=len(self.mask_val_dataset),
-                                                                   shuffle=True)
-            self.model.eval()
-            with torch.no_grad():
-                for batch_idx, (data, target) in enumerate(self.mask_val_dataloader):
-                    data, target = data.to(self.device), target.to(self.device)
-                    y_hat_before_mask_optim = self.model(data)
-                    loss_before_mask_optim = self.criterion(y_hat_before_mask_optim.squeeze(), target.double())
-                    mask_loss_cache.append(loss_before_mask_optim.item())
-                    print('Current Mask Loss: {:.6f}'.format(loss_before_mask_optim.item()))
+            # Get the validation loss
+            MLP_Selector.create_masked_datasets()
+            if self.data_type == "Classification":
+                y_hat_before_mask_optim = self.model.predict_proba(MLP_Selector.masked_X_mask_val)
+            else:
+                y_hat_before_mask_optim = self.model.predict(MLP_Selector.masked_X_mask_val)
 
+            loss_before_mask_optim = self.criterion(y_hat_before_mask_optim, MLP_Selector.masked_y_mask_val)
+            mask_loss_cache.append(loss_before_mask_optim.item())
+            print('Current Mask Loss: {:.6f}'.format(loss_before_mask_optim.item()))
             random_idx_holder = []
-            for mask_idx in range(self.input_size):
+            # Mask Optimization
+            for mask_idx in range(self.num_of_features):
                 while mask_optim_patience < 5:
-                    random_idx = np.random.randint(0, self.input_size)
+                    random_idx = np.random.randint(0, self.num_of_features)
                     while len(random_idx_holder) > 1 and random_idx_holder.__contains__(random_idx):
-                        random_idx = np.random.randint(0, self.input_size)
-                        if len(random_idx_holder) == len(self.model.mask_vec):
+                        random_idx = np.random.randint(0, self.num_of_features)
+                        if len(random_idx_holder) == len(MLP_Selector.mask):
                             break
                     if not random_idx_holder.__contains__(random_idx):
                         random_idx_holder.append(random_idx)
-
                     # Mask Optimization
-                    self.model.mask_vec[random_idx] = 0
-                    self.mask_val_dataset = TorchDataset(
-                        torch.from_numpy(self.X_val_mask).float() * self.model.mask_vec,
-                        torch.from_numpy(self.y_val_mask).float())
-                    self.mask_val_dataloader = torch.utils.data.DataLoader(self.mask_val_dataset,
-                                                                           batch_size=len(self.mask_val_dataset),
-                                                                           shuffle=True)
-                    self.model.eval()
-                    with torch.no_grad():
-                        for batch_idx, (data, target) in enumerate(self.mask_val_dataloader):
-                            data, target = data.to(self.device), target.to(self.device)
-                            y_hat_current_mask = self.model(data)
-                            current_mask_loss = self.criterion(y_hat_current_mask.squeeze(), target.double())
-                            mask_loss_cache.append(current_mask_loss.item())
-                            print(f'Mask Optimization Loss for mask {self.model.mask_vec}: {current_mask_loss.item()}')
+                    MLP_Selector.mask[random_idx] = 0
+                    MLP_Selector.create_masked_datasets()
+                    if self.data_type == "Classification":
+                        y_hat_current_mask = self.model.predict_proba(MLP_Selector.masked_X_mask_val)
+                    else:
+                        y_hat_current_mask = self.model.predict(MLP_Selector.masked_X_mask_val)
+                    current_mask_loss = self.criterion(y_hat_current_mask, MLP_Selector.masked_y_mask_val)
+                    mask_loss_cache.append(current_mask_loss.item())
+                    print(f'Mask Optimization Loss for mask {MLP_Selector.mask}: {current_mask_loss.item()}')
+                    # Check if the mask loss is greater than the previous mask loss or if the mask loss is greater than
+                    # the previous mask loss by a certain threshold
+                    if mask_loss_cache[-2] == 0:
+                        mask_loss_cache[-2] = 1e-5
 
                     if (mask_loss_cache[-1] - mask_loss_cache[-2]) / mask_loss_cache[-2] > 0.02 or \
-                        (mask_loss_cache[-1] - mask_loss_cache[0]) / mask_loss_cache[0] > 0.02:
-                        self.model.mask_vec[random_idx] = 1
+                            (mask_loss_cache[-1] - mask_loss_cache[0]) / mask_loss_cache[0] > 0.02:
+                        MLP_Selector.mask[random_idx] = 1
                         mask_loss_cache.pop()
                         mask_optim_patience += 1
 
                     else:
+                        if np.sum(MLP_Selector.mask) == 0:
+                            print("Mask is all zeros!!!")
+                            MLP_Selector.mask[random_idx] = 1
+                            mask_loss_cache.pop()
+                            mask_optim_patience += 1
+                            stop_mask = 1
+                            mask_idx = self.num_of_features
+                            mask_optim_patience = 5
+
+                            break
                         full_loss = current_mask_loss.item()
                         full_loss_cache.append(full_loss)
-                        mask_cache.append(self.model.mask_vec)
+                        mask_cache.append(MLP_Selector.mask)
             # Get the best mask from the mask cache
-            zero_columns = np.where(self.model.mask_vec == 0)[0]
-            print(f'Final mask: {self.model.mask_vec}')
+            zero_columns = np.where(MLP_Selector.mask == 0)[0]
+            print(f'Final mask: {MLP_Selector.mask}')
             mask_optim_patience = 0
             print(f"Eliminated Features: {zero_columns}")
-            print("Mask for iteration {} is: {}".format(iter, self.model.mask_vec))
+            print("Mask for iteration {} is: {}".format(iter, MLP_Selector.mask))
 
             # Evaluate the model
-            X_eval_set = torch.from_numpy(
-                np.concatenate([self.X_val, self.X_val_mask], axis=0)).float() * self.model.mask_vec
-            y_full_eval = torch.from_numpy(np.concatenate([self.y_val, self.y_val_mask], axis=0)).float()
-            X_eval_set.dataset = TorchDataset(X_eval_set, y_full_eval)
-            X_eval_set.dataloader = torch.utils.data.DataLoader(X_eval_set.dataset,
-                                                                batch_size=len(X_eval_set.dataset),
-                                                                shuffle=True)
-            self.model.eval()
-            with torch.no_grad():
-                for batch_idx, (data, target) in enumerate(X_eval_set.dataloader):
-                    data, target = data.to(self.device), target.to(self.device)
-                    y_hat = self.model(data)
-                    final_mask_loss = self.criterion(y_hat.squeeze(), target.double())
-                    final_loss_cache.append(final_mask_loss.item())
+            X_eval_set = np.concatenate([MLP_Selector.X_val, MLP_Selector.X_val_mask], axis=0)
+            y_full_eval = np.concatenate([MLP_Selector.y_val, MLP_Selector.y_val_mask], axis=0)
+            if self.data_type == "Classification":
+                y_hat = self.model.predict_proba(X_eval_set)
+                y_preds = self.model.predict(X_eval_set)
+                # Get the final loss
+                final_mask_loss = self.criterion(y_hat, y_full_eval)
+                final_loss_cache.append(final_mask_loss.item())
 
-                    print(f"Final Loss: {final_mask_loss.item()}")
-                    print(classification_report(torch.round(target), torch.round(y_hat), target_names=["0", "1"]))
-                    print(f"Accuracy {accuracy_score(torch.round(target), torch.round(y_hat))}")
+                print(f"Final Mask Loss:{final_mask_loss.item()}")
+                print(classification_report(y_full_eval, y_preds, target_names=["0", "1"]))
+                print(f"Accuracy {accuracy_score(y_full_eval, y_preds)}")
+            else:
+                y_hat = self.model.predict(X_eval_set)
+                # Get the final loss
+                final_mask_loss = self.criterion(y_hat, y_full_eval)
+                final_loss_cache.append(final_mask_loss.item())
+                print(f"Final Mask Loss:{final_mask_loss.item()}")
 
-            self.X_train = np.delete(self.X_train, zero_columns, axis=1)
-            self.X_val = np.delete(self.X_val, zero_columns, axis=1)
-            self.X_val_mask = np.delete(self.X_val_mask, zero_columns, axis=1)
-            self.X_test = np.delete(self.X_test, zero_columns, axis=1)
-            self.input_size -= len(zero_columns)
+            # Update the datasets
+            MLP_Selector.mask = np.delete(MLP_Selector.mask, zero_columns)
+            MLP_Selector.X_train = np.delete(MLP_Selector.X_train, zero_columns, axis=1)
+            MLP_Selector.X_val = np.delete(MLP_Selector.X_val, zero_columns, axis=1)
+            MLP_Selector.X_val_mask = np.delete(MLP_Selector.X_val_mask, zero_columns, axis=1)
+            MLP_Selector.X_test = np.delete(MLP_Selector.X_test, zero_columns, axis=1)
+            # Update the number of features
+            self.num_of_features -= len(zero_columns)
             iter += 1
-
-            early_stopping_mask(self.model.mask_vec, final_mask_loss.item())
-            if early_stopping_mask.early_stop:
+            # Early Stopping
+            early_stopping(MLP_Selector.mask, final_mask_loss.item())
+            if early_stopping.early_stop:
                 print("Optimization Process Have Stopped!!!")
-                full_loss_cache += early_stopping.losses
-                trace = go.Scatter(x=np.arange(full_loss_cache.__len__()),
-                                   y=full_loss_cache, mode="lines")
-                layout = go.Layout(title="Feature Selection Layer Normalized Loss", xaxis_title="Loss Index",
-                                   yaxis_title="Normalized Loss")
-                fig = go.Figure(data=[trace], layout=layout)
-                fig.show()
+                self.MLP_Selector = MLP_Selector
                 break
 
-    def test_model(self):
-        self.model.eval()
-        with torch.no_grad():
-            for batch_idx, (data, target) in enumerate(self.test_dataloader):
-                data, target = data.to(self.device), target.to(self.device)
-                output = self.model(data)
-                test_loss = self.criterion(output, target)
-                if self.train_type == "classification":
-                    output = output.round()
-                    print(classification_report(torch.round(target), torch.round(output), target_names=["0", "1"]))
-                    print(f"Accuracy {accuracy_score(torch.round(target), torch.round(output))}")
-                else:
-                    print(f"Test Loss: {test_loss.item()}")
-                    print(classification_report(target, output.round(), target_names=["0", "1"]))
-                    print(f"Accuracy {accuracy_score(target, output.round())}")
+    def Test_Network(self):
+        if self.data_type == "Classification":
+            y_preds = self.model.predict_proba(self.MLP_Selector.X_test)
+            y_hat = self.model.predict(self.MLP_Selector.X_test)
+            test_loss = self.criterion(y_preds, self.MLP_Selector.y_test)
+            print(f"Final Mask Loss:{test_loss.item()}")
+            print(classification_report(self.MLP_Selector.y_test, y_hat, target_names=["0", "1"]))
+            print(f"Accuracy {accuracy_score(self.MLP_Selector.y_test, y_hat)}")
+
+        else:
+            y_hat = self.model.predict(self.MLP_Selector.X_test)
+            test_loss = self.criterion(y_hat, self.MLP_Selector.y_test)
+            print(f"Final Test Loss:{test_loss.item()}")
+
+        date = str(datetime.datetime.now())
+        date = date.replace(" ", "_")
+        date = date.replace(":", "_")
+        date = date.replace(".", "_")
+
+        np.save(
+            f"Results/{self.dir_name}/fs_model/preds_fs_MLP_{date}.npy",
+            y_hat)
+        np.save(
+            f"Results/{self.dir_name}/fs_model/targets_{date}.npy",
+            self.MLP_Selector.y_test)
+
+        return test_loss.item()
 
 
-class FeatureSelectorMLP(nn.Module):
-    def __init__(self, dropout, input_size, hidden_size, output_size):
-        super(FeatureSelectorMLP, self).__init__()
-        self.dropout = nn.Dropout(p=dropout)
-        self.input_size = input_size
-        self.hidden_size = hidden_size
-        self.output_size = output_size
-        self.mask_vec = torch.ones(self.input_size, dtype=torch.float64)
-        self.fc1 = nn.Linear(self.input_size, self.hidden_size, dtype=torch.float64)
-        self.fc2 = nn.Linear(self.hidden_size, self.hidden_size, dtype=torch.float64)
-        self.fc3 = nn.Linear(self.hidden_size, self.output_size, dtype=torch.float64)
-        torch.nn.init.xavier_uniform_(self.fc1.weight)
-        torch.nn.init.xavier_uniform_(self.fc2.weight)
-        torch.nn.init.xavier_uniform_(self.fc3.weight)
+class MLP_Model:
+    """Wrapper for MLP model with utility functions."""
 
-        self.leaky_relu = nn.LeakyReLU()
-        self.sigmoid = nn.Sigmoid()
+    def __init__(self, params, param_grid, X_train, X_val, X_val_mask, X_test, y_train, y_val, y_val_mask, y_test,
+                 data_type):
+        # Initialization with dataset and parameters
+        self.params = params
+        self.param_grid = param_grid
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_val = X_val
+        self.y_val = y_val
+        self.X_val_mask = X_val_mask
+        self.y_val_mask = y_val_mask
+        self.X_test = X_test
+        self.y_test = y_test
+        self.data_type = data_type
 
-    def forward(self, x):
-        x = self.fc1(x)
-        x = self.leaky_relu(x)
-        x = self.fc2(x)
-        x = self.leaky_relu(x)
-        x = self.dropout(x)
-        x = self.fc3(x)
-        x = self.sigmoid(x)
-        return x
+        self.mask = np.ones(self.X_train.shape[1])
+
+        if data_type == "Classification":
+            self.base_model = MLPClassifier(**self.params, validation_fraction=0.2)
+            self.params["eval_metric"] = ["logloss"]
+            self.params["objective"] = ["binary"]
+
+        else:
+            self.base_model = MLPRegressor(**self.params, validation_fraction=0.2)
+            self.params["eval_metric"] = ["l2"]
+            self.params["objective"] = ["regression"]
+
+    def create_masked_datasets(self):
+        """Create datasets using the current mask."""
+        self.masked_X_train = self.X_train * self.mask
+        self.masked_X_val = self.X_val * self.mask
+        self.masked_X_test = self.X_test * self.mask
+        self.masked_X_mask_val = self.X_val_mask * self.mask
+
+        self.masked_y_train = self.y_train
+        self.masked_y_val = self.y_val
+        self.masked_y_test = self.y_test
+        self.masked_y_mask_val = self.y_val_mask
+
+    def Train_with_RandomSearch(self):
+        """Train the model using random search for hyperparameter optimization."""
+        self.create_masked_datasets()
+
+        random_search = RandomizedSearchCV(self.base_model, param_distributions=self.param_grid, n_iter=100, cv=5,
+                                           verbose=-1, n_jobs=-1)
+        random_search.fit(np.concatenate([self.masked_X_train, self.masked_X_val], axis=0),
+                          np.concatenate([self.masked_y_train, self.masked_y_val]))
+        self.best_params = random_search.best_params_
+        self.searched_trained_model = random_search.best_estimator_
+
+    def Train_with_GridSearch(self):
+        """Train the model using grid search for hyperparameter optimization."""
+        grid_search = GridSearchCV(self.base_model, param_grid=self.param_grid, cv=5, verbose=-1, n_jobs=-1)
+        grid_search.fit(np.concatenate([self.masked_X_train, self.masked_X_val], axis=0),
+                        np.concatenate([self.masked_y_train, self.masked_y_val]))
+        self.best_params = grid_search.best_params_
+        self.searched_trained_model = grid_search.best_estimator_
+
+    @staticmethod
+    def cross_entropy(preds, labels):
+        """Compute cross entropy loss."""
+        return log_loss(labels, preds)
+
+    @staticmethod
+    def mean_squared_error(preds, labels):
+        """Compute mean squared error."""
+        return mean_squared_error(labels, preds)

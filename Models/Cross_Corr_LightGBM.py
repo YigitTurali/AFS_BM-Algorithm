@@ -1,9 +1,32 @@
 import lightgbm as lgb
 import numpy as np
+import torch
+import random
 import datetime
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 import pandas as pd
+def set_random_seeds(seed):
+    """Set random seed for reproducibility across different libraries."""
+    # Set seed for NumPy
+    np.random.seed(seed)
+
+    # Set seed for Python's built-in random module
+    random.seed(seed)
+
+    # Set seed for PyTorch
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)  # if using multiple GPUs
+
+    # You can add more libraries or functions here, if needed
+
+    print(f"Seeds have been set to {seed} for all random number generators.")
+
+
+set_random_seeds(222)
+
 
 class Cross_Corr_LightGBM:
     """Wrapper for LightGBM model with utility functions."""
@@ -36,7 +59,8 @@ class Cross_Corr_LightGBM:
 
     def Calc_Cross_Corr(self):
         """Calculate the cross correlation between features and target."""
-        dataset = pd.concat([self.X_train,pd.DataFrame(self.y_train,columns=["y"])],axis=1)
+        dataset = self.X_train
+        dataset["y"] = self.y_train
         correlations = pd.DataFrame(dataset).corr()['y'].drop('y')
         threshold = 0.25
         selected_features = correlations[correlations.abs() > threshold].index.tolist()

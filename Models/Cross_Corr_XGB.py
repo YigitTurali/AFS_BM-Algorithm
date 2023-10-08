@@ -1,16 +1,41 @@
 import datetime
+import random
+
 import numpy as np
-import xgboost as xgb
 import pandas as pd
+import torch
+import xgboost as xgb
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
+
+
+def set_random_seeds(seed):
+    """Set random seed for reproducibility across different libraries."""
+    # Set seed for NumPy
+    np.random.seed(seed)
+
+    # Set seed for Python's built-in random module
+    random.seed(seed)
+
+    # Set seed for PyTorch
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)  # if using multiple GPUs
+
+    # You can add more libraries or functions here, if needed
+
+    print(f"Seeds have been set to {seed} for all random number generators.")
+
+
+set_random_seeds(222)
 
 
 class Cross_Corr_XGB:
     """Wrapper for XgBoost model with utility functions."""
 
     def __init__(self, params, param_grid, X_train, X_val, X_test, y_train, y_val, y_test,
-                 data_type,dir_name):
+                 data_type, dir_name):
         # Initialization with dataset and parameters
         self.params = params
         self.param_grid = param_grid
@@ -36,10 +61,15 @@ class Cross_Corr_XGB:
             self.criterion = self.mean_squared_error
 
     def Calc_Cross_Corr(self):
-        dataset = pd.concat([self.X_train,pd.DataFrame(self.y_train,columns=["y"])],axis=1)
+        dataset = self.X_train
+        dataset["y"] = self.y_train
         correlations = pd.DataFrame(dataset).corr()['y'].drop('y')
         threshold = 0.25
         selected_features = correlations[correlations.abs() > threshold].index.tolist()
+        while len(selected_features) < 1:
+            threshold -= 0.125
+            selected_features = correlations[correlations.abs() > threshold].index.tolist()
+
         self.X_train = self.X_train[selected_features]
         self.X_val = self.X_val[selected_features]
         self.X_test = self.X_test[selected_features]
@@ -49,7 +79,7 @@ class Cross_Corr_XGB:
         self.Calc_Cross_Corr()
 
         random_search = RandomizedSearchCV(self.base_model, param_distributions=self.param_grid, n_iter=15, cv=5,
-                                           verbose=-1, n_jobs=-1 ,error_score=1.0)
+                                           verbose=-1, n_jobs=-1, error_score=1.0)
         random_search.fit(self.X_train, self.y_train, eval_set=[(self.X_val, self.y_val)], verbose=False)
         self.best_params = random_search.best_params_
         self.searched_trained_model = random_search.best_estimator_

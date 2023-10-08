@@ -1,13 +1,11 @@
-import datetime
-import random
-
-import lightgbm as lgb
+from sklearn.neural_network import MLPClassifier, MLPRegressor
 import numpy as np
 import torch
+import random
+import datetime
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
-
-
+import pandas as pd
 def set_random_seeds(seed):
     """Set random seed for reproducibility across different libraries."""
     # Set seed for NumPy
@@ -30,11 +28,11 @@ def set_random_seeds(seed):
 set_random_seeds(222)
 
 
-class Baseline_LightGBM_Model:
-    """Wrapper for LightGBM model with utility functions."""
+class Cross_Corr_MLP:
+    """Wrapper for MLP model with utility functions."""
 
     def __init__(self, params, param_grid, X_train, X_val, X_test, y_train, y_val, y_test,
-                 data_type, dir_name):
+                 data_type,dir_name):
         # Initialization with dataset and parameters
         self.params = params
         self.param_grid = param_grid
@@ -48,34 +46,44 @@ class Baseline_LightGBM_Model:
         self.dir_name = dir_name
 
         if data_type == "Classification":
-            self.base_model = lgb.LGBMClassifier(**self.params)
+            self.base_model = MLPClassifier(**self.params, validation_fraction=0.2)
             self.params["eval_metric"] = ["logloss"]
             self.params["objective"] = ["binary"]
             self.criterion = self.cross_entropy
 
         else:
-            self.base_model = lgb.LGBMRegressor(**self.params)
+            self.base_model = MLPRegressor(**self.params, validation_fraction=0.2)
             self.params["eval_metric"] = ["l2"]
             self.params["objective"] = ["regression"]
             self.criterion = self.mean_squared_error
 
+    def Calc_Cross_Corr(self):
+        """Calculate the cross correlation between features and target."""
+        dataset = self.X_train
+        dataset["y"] = self.y_train
+        correlations = pd.DataFrame(dataset).corr()['y'].drop('y')
+        threshold = 0.25
+        selected_features = correlations[correlations.abs() > threshold].index.tolist()
+        self.X_train = self.X_train[selected_features]
+        self.X_val = self.X_val[selected_features]
+        self.X_test = self.X_test[selected_features]
+
     def Train_with_RandomSearch(self):
         """Train the model using random search for hyperparameter optimization."""
 
+
         random_search = RandomizedSearchCV(self.base_model, param_distributions=self.param_grid, n_iter=100, cv=5,
                                            verbose=-1, n_jobs=-1)
-        callbacks = [lgb.early_stopping(10, verbose=0), lgb.log_evaluation(period=0)]
-        random_search.fit(self.X_train, self.y_train, eval_set=(self.X_val, self.y_val),
-                          callbacks=callbacks)
+        random_search.fit(np.concatenate([self.X_train, self.X_val], axis=0),
+                        np.concatenate([self.y_train, self.y_val]))
         self.best_params = random_search.best_params_
         self.searched_trained_model = random_search.best_estimator_
 
     def Train_with_GridSearch(self):
         """Train the model using grid search for hyperparameter optimization."""
         grid_search = GridSearchCV(self.base_model, param_grid=self.param_grid, cv=5, verbose=-1, n_jobs=-1)
-        callbacks = [lgb.early_stopping(10, verbose=0), lgb.log_evaluation(period=0)]
-        grid_search.fit(self.X_train, self.y_train, eval_set=(self.X_val, self.y_val),
-                        callbacks=callbacks)
+        grid_search.fit(np.concatenate([self.X_train, self.X_val], axis=0),
+                        np.concatenate([self.y_train, self.y_val]))
         self.best_params = grid_search.best_params_
         self.searched_trained_model = grid_search.best_estimator_
 
@@ -94,12 +102,12 @@ class Baseline_LightGBM_Model:
         date = date.replace(".", "_")
 
         np.save(
-            f"Results/{self.dir_name}/baseline_model/preds_baseline_lgbm_{date}.npy",
+            f"Results/{self.dir_name}/greedy_model/preds_cross_corr_MLP_{date}.npy",
             self.y_pred)
         np.save(
-            f"Results/{self.dir_name}/baseline_model/targets_{date}.npy",
+            f"Results/{self.dir_name}/greedy_model/targets_{date}.npy",
             self.y_test)
-        print(f"Test Loss for Baseline LGBM: {self.loss}")
+        print(f"Test Loss for Cross Correlation MLP: {self.loss}")
         return self.loss
 
     @staticmethod

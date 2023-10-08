@@ -31,6 +31,9 @@ def set_random_seeds(seed):
     print(f"Seeds have been set to {seed} for all random number generators.")
 
 
+set_random_seeds(222)
+
+
 class MaskedEarlyStopping:
     """Early stopping mechanism that uses a mask."""
 
@@ -68,7 +71,7 @@ class Feature_Selector_LGBM:
     """Feature selection using LightGBM."""
 
     def __init__(self, params, param_grid, X_train, X_val, X_val_mask, X_test, y_train, y_val, y_val_mask, y_test,
-                 data_type,dir_name):
+                 data_type, dir_name):
         self.params = params
         self.param_grid = param_grid
         self.X_train = X_train

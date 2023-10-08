@@ -1,15 +1,41 @@
 import datetime
+import random
+import pandas as pd
 import numpy as np
+import torch
 import xgboost as xgb
+from sklearn.feature_selection import RFE
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
-from sklearn.feature_selection import RFE
+
+
+def set_random_seeds(seed):
+    """Set random seed for reproducibility across different libraries."""
+    # Set seed for NumPy
+    np.random.seed(seed)
+
+    # Set seed for Python's built-in random module
+    random.seed(seed)
+
+    # Set seed for PyTorch
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)  # if using multiple GPUs
+
+    # You can add more libraries or functions here, if needed
+
+    print(f"Seeds have been set to {seed} for all random number generators.")
+
+
+set_random_seeds(222)
+
 
 class RFE_XGB:
     """Wrapper for XgBoost model with utility functions."""
 
     def __init__(self, params, param_grid, X_train, X_val, X_test, y_train, y_val, y_test,
-                 data_type,dir_name):
+                 data_type, dir_name):
         # Initialization with dataset and parameters
         self.params = params
         self.param_grid = param_grid
@@ -24,14 +50,14 @@ class RFE_XGB:
 
         if data_type == "Classification":
             self.base_model = xgb.XGBClassifier(**self.params, device="cuda", tree_method="gpu_hist")
-            self.perform_RFE(n_features_to_select=5)
+            self.perform_RFE(n_features_to_select=10)
             self.params["eval_metric"] = ["logloss"]
             self.params["objective"] = ["binary"]
             self.criterion = self.cross_entropy
 
         else:
             self.base_model = xgb.XGBRegressor(**self.params, device="cuda", tree_method="gpu_hist")
-            self.perform_RFE(n_features_to_select=5)
+            self.perform_RFE(n_features_to_select=10)
             self.params["eval_metric"] = ["l2"]
             self.params["objective"] = ["regression"]
             self.criterion = self.mean_squared_error
@@ -39,7 +65,7 @@ class RFE_XGB:
     def perform_RFE(self, n_features_to_select=None):
         """Perform RFE to rank features."""
         rfe = RFE(estimator=self.base_model, n_features_to_select=n_features_to_select)
-        rfe.fit(self.X_train, self.y_train)
+        rfe.fit(self.X_train,self.y_train)
 
         # Store the ranking and support mask
         self.feature_ranking_ = rfe.ranking_
@@ -49,6 +75,7 @@ class RFE_XGB:
         if n_features_to_select:
             features = np.array(self.X_train.columns) * self.feature_support_
             features = features[features != ""]
+            features = features[features != "y"]
             self.X_train = self.X_train[features]
             self.X_val = self.X_val[features]
             self.X_test = self.X_test[features]

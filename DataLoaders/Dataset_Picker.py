@@ -37,8 +37,8 @@ def Create_Dataset(dataset_name, val_ratio=0.2,
     elif dataset_name == "ise":
         data_dir = f"{working_dir}/DataLoaders/Datasets/Istanbul_Stock_Exchange"
         data = pd.read_csv(f"{data_dir}/data_akbilgic_extracted.csv", index_col=False)
-        # scaler = MinMaxScaler()
-        # data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
+        scaler = MinMaxScaler()
+        data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
 
     elif dataset_name == "beijing":
         data_dir = f"{working_dir}/DataLoaders/Datasets/beijing_pm_2.5"
@@ -62,10 +62,12 @@ def Create_Dataset(dataset_name, val_ratio=0.2,
 
     elif dataset_name == "darwin":
         data_dir = f"{working_dir}/DataLoaders/Datasets/darwin"
-        data = pd.read_csv(f"{data_dir}/DARWIN.csv", index_col="ID")
+        data = pd.read_csv(f"{data_dir}/darwin.csv", index_col="ID")
         data["y"] = [1 if x == "P" else 0 for x in data["y"]]
+        data_y = data.pop("y")
         scaler = MinMaxScaler()
         data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
+        data["y"] = data_y.values
 
     data_dict = {}
     if type(data) == list:

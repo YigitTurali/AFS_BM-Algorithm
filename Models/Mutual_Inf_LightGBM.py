@@ -1,11 +1,35 @@
 import datetime
+import random
 
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
+import torch
 from sklearn.feature_selection import mutual_info_classif, mutual_info_regression
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
+
+
+def set_random_seeds(seed):
+    """Set random seed for reproducibility across different libraries."""
+    # Set seed for NumPy
+    np.random.seed(seed)
+
+    # Set seed for Python's built-in random module
+    random.seed(seed)
+
+    # Set seed for PyTorch
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)  # if using multiple GPUs
+
+    # You can add more libraries or functions here, if needed
+
+    print(f"Seeds have been set to {seed} for all random number generators.")
+
+
+set_random_seeds(222)
 
 
 class Mutual_Inf_LightGBM:
@@ -39,7 +63,9 @@ class Mutual_Inf_LightGBM:
 
     def MI_Feature_Selection(self):
         """Perform mutual information feature selection."""
-        dataset = pd.concat([self.X_train,pd.DataFrame(self.y_train,columns=["y"])],axis=1)
+        dataset = self.X_train
+        dataset["y"] = self.y_train
+        dataset = dataset.fillna(dataset.mean())
         if self.data_type == "Classification":
             mi = mutual_info_classif(dataset.drop('y', axis=1), dataset['y'])
             mi_series = pd.Series(mi, index=dataset.columns[:-1])
@@ -48,7 +74,7 @@ class Mutual_Inf_LightGBM:
             mi = mutual_info_regression(dataset.drop('y', axis=1), dataset['y'])
             mi_series = pd.Series(mi, index=dataset.columns[:-1])
 
-        selected_features = mi_series.sort_values(ascending=False).head(8).index.tolist()
+        selected_features = mi_series.sort_values(ascending=False).head(10).index.tolist()
         self.X_train = self.X_train[selected_features]
         self.X_val = self.X_val[selected_features]
         self.X_test = self.X_test[selected_features]

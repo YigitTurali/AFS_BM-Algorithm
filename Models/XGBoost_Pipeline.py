@@ -1,15 +1,40 @@
 import datetime
+import random
+
 import numpy as np
+import torch
 import xgboost as xgb
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
+
+
+def set_random_seeds(seed):
+    """Set random seed for reproducibility across different libraries."""
+    # Set seed for NumPy
+    np.random.seed(seed)
+
+    # Set seed for Python's built-in random module
+    random.seed(seed)
+
+    # Set seed for PyTorch
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)  # if using multiple GPUs
+
+    # You can add more libraries or functions here, if needed
+
+    print(f"Seeds have been set to {seed} for all random number generators.")
+
+
+set_random_seeds(222)
 
 
 class Baseline_XgBoost_Model:
     """Wrapper for XgBoost model with utility functions."""
 
     def __init__(self, params, param_grid, X_train, X_val, X_test, y_train, y_val, y_test,
-                 data_type,dir_name):
+                 data_type, dir_name):
         # Initialization with dataset and parameters
         self.params = params
         self.param_grid = param_grid

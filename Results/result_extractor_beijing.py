@@ -34,7 +34,7 @@ vanilla_lgbm_loss = np.load(working_dir + '/Classification/statlog_aca/test_lgbm
 
 vanilla_xgb_loss = np.load(working_dir + '/Classification/statlog_aca/test_xgboost_baseline_loss.npy').item()
 
-set_random_seeds(666)
+set_random_seeds(222)
 loss3_list_lgbm = []
 loss3_list_xgb = []
 random_list_list = []
