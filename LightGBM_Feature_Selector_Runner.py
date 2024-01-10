@@ -387,9 +387,9 @@ if __name__ == '__main__':
                                            y_val=y_val, y_val_mask=y_val_mask, y_test=y_test,
                                            data_type="Regression", dir_name=directory_name)
 
-            # network.fit_network()
-            # test_loss = network.Test_Network()
-            # test_fs_xgb_model_loss.append(test_loss)
+            network.fit_network()
+            test_loss = network.Test_Network()
+            test_fs_xgb_model_loss.append(test_loss)
 
             # Baseline LGBM Model
             X_val = pd.concat([X_val, X_val_mask], axis=0)
@@ -415,6 +415,8 @@ if __name__ == '__main__':
             best_params_xgboost = baseline_network_lgbm.best_params
             best_params_xgboost = {key: [best_params_xgboost[key]] for key in best_params_xgboost}
             test_lgbm_baseline_loss.append(baseline_network_lgbm.Test_Network())
+            if X_train.shape[1] == 101:
+                X_train.drop(columns=["y"], inplace=True)
 
             # Baseline XGB Model
             baseline_network_xgboost = Baseline_XgBoost_Model(
@@ -437,6 +439,8 @@ if __name__ == '__main__':
 
             baseline_network_xgboost.Train_with_RandomSearch()
             test_xgboost_baseline_loss.append(baseline_network_xgboost.Test_Network())
+            if X_train.shape[1] == 101:
+                X_train.drop(columns=["y"], inplace=True)
 
             rfe_lgbm = RFE_LightGBM(params={"boosting_type": "gbdt", "importance_type": "gain",
                                             "verbosity": -1},
@@ -457,6 +461,8 @@ if __name__ == '__main__':
 
             rfe_lgbm.Train_with_RandomSearch()
             test_lgbm_rfe_loss.append(rfe_lgbm.Test_Network())
+            if X_train.shape[1] == 101:
+                X_train.drop(columns=["y"], inplace=True)
 
             rfe_xgb = RFE_XGB(params={"boosting_type": "gbdt", "importance_type": "gain",
                                       "verbosity": 0},
@@ -475,9 +481,11 @@ if __name__ == '__main__':
                               y_train=y_train, y_val=y_val, y_test=y_test,
                               data_type="Regression", dir_name=directory_name)
 
-            # TODO: Fix XGBoost RFE
             rfe_xgb.Train_with_RandomSearch()
             test_xgboost_rfe_loss.append(rfe_xgb.Test_Network())
+            if X_train.shape[1] == 101:
+                X_train.drop(columns=["y"], inplace=True)
+
 
             cross_corr_lgbm = Cross_Corr_LightGBM(params={"boosting_type": "gbdt", "importance_type": "gain",
                                                           "verbosity": -1},
@@ -498,7 +506,8 @@ if __name__ == '__main__':
 
             cross_corr_lgbm.Train_with_RandomSearch()
             test_lgbm_cross_corr_loss.append(cross_corr_lgbm.Test_Network())
-            X_train.drop(columns=["y"], inplace=True)
+            if X_train.shape[1] == 101:
+                X_train.drop(columns=["y"], inplace=True)
 
             cross_corr_xgb = Cross_Corr_XGB(
                 params={"boosting_type": "gbdt", "importance_type": "gain",
@@ -520,6 +529,8 @@ if __name__ == '__main__':
 
             cross_corr_xgb.Train_with_RandomSearch()
             test_xgboost_cross_corr_loss.append(cross_corr_xgb.Test_Network())
+            if X_train.shape[1] == 101:
+                X_train.drop(columns=["y"], inplace=True)
 
             mutual_inf_lgbm = Mutual_Inf_LightGBM(params={"boosting_type": "gbdt", "importance_type": "gain",
                                                           "verbosity": -1},
@@ -540,7 +551,8 @@ if __name__ == '__main__':
 
             mutual_inf_lgbm.Train_with_RandomSearch()
             test_lgbm_mutual_inf_loss.append(mutual_inf_lgbm.Test_Network())
-            X_train.drop(columns=["y"], inplace=True)
+            if X_train.shape[1] == 101:
+                X_train.drop(columns=["y"], inplace=True)
 
             mutual_inf_xgb = Mutual_Inf_XGB(params={"boosting_type": "gbdt", "importance_type": "gain",
                                                     "verbosity": 0},
@@ -561,6 +573,8 @@ if __name__ == '__main__':
 
             mutual_inf_xgb.Train_with_RandomSearch()
             test_xgboost_mutual_inf_loss.append(mutual_inf_xgb.Test_Network())
+            if X_train.shape[1] == 101:
+                X_train.drop(columns=["y"], inplace=True)
 
             print("------------------------------------------------------------------")
             print("Test Loss for Feature Selector LGBM: ", test_fs_lgbm_model_loss[-1])
