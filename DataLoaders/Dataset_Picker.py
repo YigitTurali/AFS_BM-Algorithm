@@ -34,6 +34,13 @@ def Create_Dataset(dataset_name, val_ratio=0.2,
         scaler = MinMaxScaler()
         data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
 
+    elif dataset_name == "synthetic":
+        data_dir = f"{working_dir}/DataLoaders/Datasets/Synthetic"
+        data = pd.read_csv(f"{data_dir}/synthetic_dataset.csv", index_col=False)
+        scaler = MinMaxScaler()
+        data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
+        data.rename(columns={"100": "y"}, inplace=True)
+
     elif dataset_name == "ise":
         data_dir = f"{working_dir}/DataLoaders/Datasets/Istanbul_Stock_Exchange"
         data = pd.read_csv(f"{data_dir}/data_akbilgic_extracted.csv", index_col=False)

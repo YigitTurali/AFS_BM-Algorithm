@@ -28,7 +28,7 @@ def set_random_seeds(seed):
     print(f"Seeds have been set to {seed} for all random number generators.")
 
 
-set_random_seeds(222)
+set_random_seeds(444)
 
 
 class RFE_LightGBM:
@@ -50,35 +50,51 @@ class RFE_LightGBM:
 
         if data_type == "Classification":
             self.base_model = lgb.LGBMClassifier(**self.params)
-            self.perform_RFE(n_features_to_select=10)
+            best_loss = np.inf
+            for i in range(2, 21):
+                self.perform_RFE(n_features_to_select=i)
+                best_loss = min(best_loss, self.val_rfe_loss)
+                if self.val_rfe_loss == best_loss:
+                    self.best_n_features = i
+
+            self.perform_RFE(n_features_to_select=self.best_n_features)
             self.params["eval_metric"] = ["logloss"]
             self.params["objective"] = ["binary"]
             self.criterion = self.cross_entropy
 
         else:
             self.base_model = lgb.LGBMRegressor(**self.params)
-            self.perform_RFE(n_features_to_select=10)
+            best_loss = np.inf
+            for i in range(2, 21):
+                self.perform_RFE(n_features_to_select=i)
+                best_loss = min(best_loss, self.val_rfe_loss)
+                if self.val_rfe_loss == best_loss:
+                    self.best_n_features = i
+
+            self.perform_RFE(n_features_to_select=self.best_n_features, best=True)
             self.params["eval_metric"] = ["l2"]
             self.params["objective"] = ["regression"]
             self.criterion = self.mean_squared_error
 
-    def perform_RFE(self, n_features_to_select=None):
+    def perform_RFE(self, n_features_to_select=None, best=False):
         """Perform RFE to rank features."""
         rfe = RFE(estimator=self.base_model, n_features_to_select=n_features_to_select)
-        rfe.fit(self.X_train, pd.DataFrame(self.y_train,columns=["y"]))
+        rfe.fit(self.X_train, pd.DataFrame(self.y_train, columns=["y"]))
 
         # Store the ranking and support mask
         self.feature_ranking_ = rfe.ranking_
         self.feature_support_ = rfe.support_
+        self.val_rfe_loss = rfe.score(self.X_val, pd.DataFrame(self.y_val, columns=["y"]))
 
         # Optionally, you can reduce the dataset to the selected features
-        if n_features_to_select:
+        if n_features_to_select and best:
             features = np.array(self.X_train.columns) * self.feature_support_
             features = features[features != ""]
             features = features[features != "y"]
             self.X_train = self.X_train[features]
             self.X_val = self.X_val[features]
             self.X_test = self.X_test[features]
+            print(f"Selected features for RFE LGBM: {features}")
 
     def Train_with_RandomSearch(self):
         """Train the model using random search for hyperparameter optimization."""

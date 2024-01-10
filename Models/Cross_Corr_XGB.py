@@ -28,7 +28,7 @@ def set_random_seeds(seed):
     print(f"Seeds have been set to {seed} for all random number generators.")
 
 
-set_random_seeds(222)
+set_random_seeds(444)
 
 
 class Cross_Corr_XGB:
@@ -60,38 +60,70 @@ class Cross_Corr_XGB:
             self.params["objective"] = ["regression"]
             self.criterion = self.mean_squared_error
 
-    def Calc_Cross_Corr(self):
+    def Calc_Cross_Corr(self, threshold, best=False):
+        """Calculate the cross correlation between features and target."""
         dataset = self.X_train
         dataset["y"] = self.y_train
         correlations = pd.DataFrame(dataset).corr()['y'].drop('y')
-        threshold = 0.25
         selected_features = correlations[correlations.abs() > threshold].index.tolist()
-        while len(selected_features) < 1:
-            threshold -= 0.125
-            selected_features = correlations[correlations.abs() > threshold].index.tolist()
 
-        self.X_train = self.X_train[selected_features]
-        self.X_val = self.X_val[selected_features]
-        self.X_test = self.X_test[selected_features]
+        if best:
+            self.X_train = self.X_train[selected_features]
+            self.X_val = self.X_val[selected_features]
+            self.X_test = self.X_test[selected_features]
+            print("Selected features for Cross Correlation XGB: ", selected_features)
+
+        else:
+            self.X_train_mi = self.X_train[selected_features]
+            self.X_val_mi = self.X_val[selected_features]
+            self.X_test_mi = self.X_test[selected_features]
 
     def Train_with_RandomSearch(self):
         """Train the model using random search for hyperparameter optimization."""
-        self.Calc_Cross_Corr()
+        best_loss = np.inf
+        best_threshold = 10000
+        for threshold in [0.02, 0.03, 0.04, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35]:
+            self.Calc_Cross_Corr(threshold)
+            random_search = RandomizedSearchCV(self.base_model, param_distributions=self.param_grid, n_iter=15, cv=5,
+                                               verbose=-1, n_jobs=-1)
+            random_search.fit(self.X_train_mi, self.y_train, eval_set=[(self.X_val_mi, self.y_val)], verbose=False)
+            self.best_params = random_search.best_params_
+            self.searched_trained_model = random_search.best_estimator_
+            loss = random_search.best_score_
+            if loss < best_loss:
+                best_loss = loss
+                best_threshold = threshold
 
+        self.Calc_Cross_Corr(best_threshold, best=True)
         random_search = RandomizedSearchCV(self.base_model, param_distributions=self.param_grid, n_iter=15, cv=5,
-                                           verbose=-1, n_jobs=-1, error_score=1.0)
+                                           verbose=-1, n_jobs=-1)
         random_search.fit(self.X_train, self.y_train, eval_set=[(self.X_val, self.y_val)], verbose=False)
         self.best_params = random_search.best_params_
         self.searched_trained_model = random_search.best_estimator_
 
     def Train_with_GridSearch(self):
         """Train the model using grid search for hyperparameter optimization."""
-        self.Calc_Cross_Corr()
 
-        grid_search = GridSearchCV(self.base_model, param_grid=self.param_grid, cv=5, verbose=-1, n_jobs=-1)
-        grid_search.fit(self.X_train, self.y_train, eval_set=[(self.X_val, self.y_val)], verbose=False)
-        self.best_params = grid_search.best_params_
-        self.searched_trained_model = grid_search.best_estimator_
+        best_loss = np.inf
+        best_threshold = 10000
+        for threshold in [0.02, 0.03, 0.04, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.5]:
+            self.Calc_Cross_Corr(threshold)
+            random_search = RandomizedSearchCV(self.base_model, param_distributions=self.param_grid, n_iter=15, cv=5,
+                                               verbose=-1, n_jobs=-1)
+            random_search.fit(self.X_train_mi, self.y_train, eval_set=[(self.X_val_mi, self.y_val)], verbose=False)
+            self.best_params = random_search.best_params_
+            self.searched_trained_model = random_search.best_estimator_
+            loss = random_search.best_score_
+            if loss < best_loss:
+                best_loss = loss
+                best_threshold = threshold
+
+        self.Calc_Cross_Corr(best_threshold, best=True)
+        random_search = RandomizedSearchCV(self.base_model, param_distributions=self.param_grid, n_iter=15, cv=5,
+                                           verbose=-1, n_jobs=-1)
+        random_search.fit(self.X_train, self.y_train, eval_set=[(self.X_val, self.y_val)], verbose=False)
+        self.best_params = random_search.best_params_
+        self.searched_trained_model = random_search.best_estimator_
 
     def Test_Network(self):
         """Test the trained model."""

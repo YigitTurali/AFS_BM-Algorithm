@@ -30,7 +30,7 @@ def set_random_seeds(seed):
 
     print(f"Seeds have been set to {seed} for all random number generators.")
 
-set_random_seeds(222)
+set_random_seeds(444)
 
 
 class MaskedEarlyStopping:
@@ -132,8 +132,8 @@ class Feature_Selector_XGB:
             loss_after_train = self.criterion(y_hat_after_train, XGBoost_Selector.masked_y_val)
             # Update the training iteration
             train_loss_cache.append(loss_after_train.item())
-            print('Training Iteration: {} \tLoss: {:.6f}'.format(training_iter, loss_after_train))
-            print("Training Iteration Complete")
+            # print('Training Iteration: {} \tLoss: {:.6f}'.format(training_iter, loss_after_train))
+            # print("Training Iteration Complete")
             training_iter += 1
 
             # Get the validation loss
@@ -145,7 +145,7 @@ class Feature_Selector_XGB:
 
             loss_before_mask_optim = self.criterion(y_hat_before_mask_optim, XGBoost_Selector.masked_y_mask_val)
             mask_loss_cache.append(loss_before_mask_optim.item())
-            print('Current Mask Loss: {:.6f}'.format(loss_before_mask_optim.item()))
+            # print('Current Mask Loss: {:.6f}'.format(loss_before_mask_optim.item()))
             random_idx_holder = []
             # Mask Optimization
             for mask_idx in range(self.num_of_features):
@@ -166,7 +166,7 @@ class Feature_Selector_XGB:
                         y_hat_current_mask = self.model.predict(XGBoost_Selector.masked_X_mask_val)
                     current_mask_loss = self.criterion(y_hat_current_mask, XGBoost_Selector.masked_y_mask_val)
                     mask_loss_cache.append(current_mask_loss.item())
-                    print(f'Mask Optimization Loss for mask {XGBoost_Selector.mask}: {current_mask_loss.item()}')
+                    # print(f'Mask Optimization Loss for mask {XGBoost_Selector.mask}: {current_mask_loss.item()}')
                     # Check if the mask loss is greater than the previous mask loss or if the mask loss is greater than
                     # the previous mask loss by a certain threshold
                     if mask_loss_cache[-2] == 0:
@@ -179,7 +179,7 @@ class Feature_Selector_XGB:
 
                     else:
                         if np.sum(XGBoost_Selector.mask) == 0:
-                            print("Mask is all zeros!!!")
+                            # print("Mask is all zeros!!!")
                             XGBoost_Selector.mask[random_idx] = 1
                             mask_loss_cache.pop()
                             mask_optim_patience += 1
@@ -191,10 +191,10 @@ class Feature_Selector_XGB:
                         mask_cache.append(XGBoost_Selector.mask)
             # Get the best mask from the mask cache
             zero_columns = np.where(XGBoost_Selector.mask == 0)[0]
-            print(f'Final mask: {XGBoost_Selector.mask}')
+            # print(f'Final mask: {XGBoost_Selector.mask}')
             mask_optim_patience = 0
-            print(f"Eliminated Features: {zero_columns}")
-            print("Mask for iteration {} is: {}".format(iter, XGBoost_Selector.mask))
+            # print(f"Eliminated Features: {zero_columns}")
+            # print("Mask for iteration {} is: {}".format(iter, XGBoost_Selector.mask))
 
             # trace = go.Scatter(x=np.arange(full_loss_cache.__len__()),
             #                    y=full_loss_cache, mode="lines")
@@ -213,18 +213,19 @@ class Feature_Selector_XGB:
                 final_mask_loss = self.criterion(y_hat, y_full_eval)
                 final_loss_cache.append(final_mask_loss.item())
 
-                print(f"Final Mask Loss:{final_mask_loss.item()}")
-                print(classification_report(y_full_eval, y_preds, target_names=["0", "1"]))
-                print(f"Accuracy {accuracy_score(y_full_eval, y_preds)}")
+                # print(f"Final Mask Loss:{final_mask_loss.item()}")
+                # print(classification_report(y_full_eval, y_preds, target_names=["0", "1"]))
+                # print(f"Accuracy {accuracy_score(y_full_eval, y_preds)}")
             else:
                 y_hat = self.model.predict(X_eval_set)
                 # Get the final loss
                 final_mask_loss = self.criterion(y_hat, y_full_eval)
                 final_loss_cache.append(final_mask_loss.item())
-                print(f"Final Mask Loss:{final_mask_loss.item()}")
+                # print(f"Final Mask Loss:{final_mask_loss.item()}")
 
             # Update the datasets
             XGBoost_Selector.mask = np.delete(XGBoost_Selector.mask, zero_columns)
+            XGBoost_Selector.replicate_mask = np.delete(XGBoost_Selector.replicate_mask, zero_columns)
             XGBoost_Selector.X_train = np.delete(XGBoost_Selector.X_train, zero_columns, axis=1)
             XGBoost_Selector.X_val = np.delete(XGBoost_Selector.X_val, zero_columns, axis=1)
             XGBoost_Selector.X_val_mask = np.delete(XGBoost_Selector.X_val_mask, zero_columns, axis=1)
@@ -236,6 +237,7 @@ class Feature_Selector_XGB:
             early_stopping(XGBoost_Selector.mask, final_mask_loss.item())
             if early_stopping.early_stop:
                 print("Optimization Process Have Stopped!!!")
+                print("Selected Features for AFS-BM XGB: ", XGBoost_Selector.replicate_mask)
                 # trace = go.Scatter(x=np.arange(full_loss_cache.__len__()),
                 #                    y=full_loss_cache, mode="lines")
                 # layout = go.Layout(title="Feature Selection Layer Normalized Loss", xaxis_title="Loss Index",
@@ -250,13 +252,14 @@ class Feature_Selector_XGB:
             y_preds = self.model.predict_proba(self.xgbM_Selector.X_test)
             y_hat = self.model.predict(self.xgbM_Selector.X_test)
             test_loss = self.criterion(y_preds, self.xgbM_Selector.y_test)
-            print(f"Final Mask Loss:{test_loss.item()}")
+            print(f"Final Test Loss:{test_loss.item()}")
             print(classification_report(self.xgbM_Selector.y_test, y_hat, target_names=["0", "1"]))
             print(f"Accuracy {accuracy_score(self.xgbM_Selector.y_test, y_hat)}")
 
         else:
             y_hat = self.model.predict(self.xgbM_Selector.X_test)
             test_loss = self.criterion(y_hat, self.xgbM_Selector.y_test)
+            print(f"Final Test Loss:{test_loss.item()}")
         date = str(datetime.datetime.now())
         date = date.replace(" ", "_")
         date = date.replace(":", "_")
@@ -290,6 +293,7 @@ class XGBoost_Model:
         self.data_type = data_type
 
         self.mask = np.ones(self.X_train.shape[1])
+        self.replicate_mask = np.arange(self.X_train.shape[1])
 
         if data_type == "Classification":
             self.base_model = xgb.XGBClassifier(**self.params, device="cuda", tree_method="gpu_hist")

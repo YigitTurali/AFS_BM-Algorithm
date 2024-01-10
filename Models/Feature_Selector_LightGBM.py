@@ -135,8 +135,8 @@ class Feature_Selector_LGBM:
             loss_after_train = self.criterion(y_hat_after_train, LightGBM_Selector.masked_y_val)
             # Update the training iteration
             train_loss_cache.append(loss_after_train.item())
-            print('Training Iteration: {} \tLoss: {:.6f}'.format(training_iter, loss_after_train))
-            print("Training Iteration Complete")
+            # print('Training Iteration: {} \tLoss: {:.6f}'.format(training_iter, loss_after_train))
+            # print("Training Iteration Complete")
             training_iter += 1
 
             # Get the validation loss
@@ -148,7 +148,7 @@ class Feature_Selector_LGBM:
 
             loss_before_mask_optim = self.criterion(y_hat_before_mask_optim, LightGBM_Selector.masked_y_mask_val)
             mask_loss_cache.append(loss_before_mask_optim.item())
-            print('Current Mask Loss: {:.6f}'.format(loss_before_mask_optim.item()))
+            # print('Current Mask Loss: {:.6f}'.format(loss_before_mask_optim.item()))
             random_idx_holder = []
             # Mask Optimization
             for mask_idx in range(self.num_of_features):
@@ -169,7 +169,7 @@ class Feature_Selector_LGBM:
                         y_hat_current_mask = self.model.predict(LightGBM_Selector.masked_X_mask_val)
                     current_mask_loss = self.criterion(y_hat_current_mask, LightGBM_Selector.masked_y_mask_val)
                     mask_loss_cache.append(current_mask_loss.item())
-                    print(f'Mask Optimization Loss for mask {LightGBM_Selector.mask}: {current_mask_loss.item()}')
+                    # print(f'Mask Optimization Loss for mask {LightGBM_Selector.mask}: {current_mask_loss.item()}')
                     # Check if the mask loss is greater than the previous mask loss or if the mask loss is greater than
                     # the previous mask loss by a certain threshold
                     if mask_loss_cache[-2] == 0:
@@ -183,7 +183,7 @@ class Feature_Selector_LGBM:
 
                     else:
                         if np.sum(LightGBM_Selector.mask) == 0:
-                            print("Mask is all zeros!!!")
+                            # print("Mask is all zeros!!!")
                             LightGBM_Selector.mask[random_idx] = 1
                             mask_loss_cache.pop()
                             mask_optim_patience += 1
@@ -197,10 +197,10 @@ class Feature_Selector_LGBM:
                         mask_cache.append(LightGBM_Selector.mask)
             # Get the best mask from the mask cache
             zero_columns = np.where(LightGBM_Selector.mask == 0)[0]
-            print(f'Final mask: {LightGBM_Selector.mask}')
+            # print(f'Final mask: {LightGBM_Selector.mask}')
             mask_optim_patience = 0
-            print(f"Eliminated Features: {zero_columns}")
-            print("Mask for iteration {} is: {}".format(iter, LightGBM_Selector.mask))
+            # print(f"Eliminated Features: {zero_columns}")
+            # print("Mask for iteration {} is: {}".format(iter, LightGBM_Selector.mask))
 
             # trace = go.Scatter(x=np.arange(full_loss_cache.__len__()),
             #                    y=full_loss_cache, mode="lines")
@@ -219,18 +219,19 @@ class Feature_Selector_LGBM:
                 final_mask_loss = self.criterion(y_hat, y_full_eval)
                 final_loss_cache.append(final_mask_loss.item())
 
-                print(f"Final Mask Loss:{final_mask_loss.item()}")
-                print(classification_report(y_full_eval, y_preds, target_names=["0", "1"]))
-                print(f"Accuracy {accuracy_score(y_full_eval, y_preds)}")
+                # print(f"Final Mask Loss:{final_mask_loss.item()}")
+                # print(classification_report(y_full_eval, y_preds, target_names=["0", "1"]))
+                # print(f"Accuracy {accuracy_score(y_full_eval, y_preds)}")
             else:
                 y_hat = self.model.predict(X_eval_set)
                 # Get the final loss
                 final_mask_loss = self.criterion(y_hat, y_full_eval)
                 final_loss_cache.append(final_mask_loss.item())
-                print(f"Final Mask Loss:{final_mask_loss.item()}")
+                # print(f"Final Mask Loss:{final_mask_loss.item()}")
 
             # Update the datasets
             LightGBM_Selector.mask = np.delete(LightGBM_Selector.mask, zero_columns)
+            LightGBM_Selector.replicate_mask = np.delete(LightGBM_Selector.replicate_mask, zero_columns)
             LightGBM_Selector.X_train = np.delete(LightGBM_Selector.X_train, zero_columns, axis=1)
             LightGBM_Selector.X_val = np.delete(LightGBM_Selector.X_val, zero_columns, axis=1)
             LightGBM_Selector.X_val_mask = np.delete(LightGBM_Selector.X_val_mask, zero_columns, axis=1)
@@ -242,6 +243,7 @@ class Feature_Selector_LGBM:
             early_stopping(LightGBM_Selector.mask, final_mask_loss.item())
             if early_stopping.early_stop:
                 print("Optimization Process Have Stopped!!!")
+                print("Selected Features for AFS-BM LGBM: {}".format(LightGBM_Selector.replicate_mask))
                 # trace = go.Scatter(x=np.arange(full_loss_cache.__len__()),
                 #                    y=full_loss_cache, mode="lines")
                 # layout = go.Layout(title="Feature Selection Layer Normalized Loss", xaxis_title="Loss Index",
@@ -256,7 +258,7 @@ class Feature_Selector_LGBM:
             y_preds = self.model.predict_proba(self.LGBM_Selector.X_test)
             y_hat = self.model.predict(self.LGBM_Selector.X_test)
             test_loss = self.criterion(y_preds, self.LGBM_Selector.y_test)
-            print(f"Final Mask Loss:{test_loss.item()}")
+            print(f"Final Test Loss:{test_loss.item()}")
             print(classification_report(self.LGBM_Selector.y_test, y_hat, target_names=["0", "1"]))
             print(f"Accuracy {accuracy_score(self.LGBM_Selector.y_test, y_hat)}")
 
@@ -299,6 +301,7 @@ class LightGBM_Model:
         self.data_type = data_type
 
         self.mask = np.ones(self.X_train.shape[1])
+        self.replicate_mask = np.arange(self.X_train.shape[1])
 
         if data_type == "Classification":
             self.base_model = lgb.LGBMClassifier(**self.params)
