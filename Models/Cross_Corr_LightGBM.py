@@ -27,7 +27,7 @@ def set_random_seeds(seed):
     print(f"Seeds have been set to {seed} for all random number generators.")
 
 
-set_random_seeds(444)
+set_random_seeds(222)
 
 
 class Cross_Corr_LightGBM:

@@ -85,6 +85,7 @@ class Feature_Selector_LGBM:
         self.data_type = data_type
         self.num_of_features = self.X_train.shape[1]
         self.dir_name = dir_name
+        self.col_names = X_train.columns
 
         self.mask = np.ones(self.X_train.shape[1])
 
@@ -175,8 +176,8 @@ class Feature_Selector_LGBM:
                     if mask_loss_cache[-2] == 0:
                         mask_loss_cache[-2] = 1e-5
 
-                    if (mask_loss_cache[-1] - mask_loss_cache[-2]) / mask_loss_cache[-2] > 0.02 or \
-                            (mask_loss_cache[-1] - mask_loss_cache[0]) / mask_loss_cache[0] > 0.02:
+                    if (mask_loss_cache[-1] - mask_loss_cache[-2]) / mask_loss_cache[-2] > 0.01 or \
+                            (mask_loss_cache[-1] - mask_loss_cache[0]) / mask_loss_cache[0] > 0.01:
                         LightGBM_Selector.mask[random_idx] = 1
                         mask_loss_cache.pop()
                         mask_optim_patience += 1
@@ -243,7 +244,8 @@ class Feature_Selector_LGBM:
             early_stopping(LightGBM_Selector.mask, final_mask_loss.item())
             if early_stopping.early_stop:
                 print("Optimization Process Have Stopped!!!")
-                print("Selected Features for AFS-BM LGBM: {}".format(LightGBM_Selector.replicate_mask))
+                print("Selected Features for AFS-BM LGBM: {}".format(self.col_names[LightGBM_Selector.replicate_mask]))
+                print("Number of Selected Features for AFS-BM LGBM: {}".format(len(LightGBM_Selector.replicate_mask)))
                 # trace = go.Scatter(x=np.arange(full_loss_cache.__len__()),
                 #                    y=full_loss_cache, mode="lines")
                 # layout = go.Layout(title="Feature Selection Layer Normalized Loss", xaxis_title="Loss Index",

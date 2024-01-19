@@ -28,7 +28,7 @@ def set_random_seeds(seed):
     print(f"Seeds have been set to {seed} for all random number generators.")
 
 
-set_random_seeds(444)
+177
 
 
 class RFE_XGB:

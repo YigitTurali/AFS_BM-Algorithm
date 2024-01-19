@@ -30,7 +30,7 @@ def set_random_seeds(seed):
 
     print(f"Seeds have been set to {seed} for all random number generators.")
 
-set_random_seeds(444)
+set_random_seeds(222)
 
 
 class MaskedEarlyStopping:
@@ -84,6 +84,7 @@ class Feature_Selector_XGB:
         self.data_type = data_type
         self.num_of_features = self.X_train.shape[1]
         self.dir_name = dir_name
+        self.col_names = X_train.columns
 
         self.mask = np.ones(self.X_train.shape[1])
 
@@ -237,7 +238,8 @@ class Feature_Selector_XGB:
             early_stopping(XGBoost_Selector.mask, final_mask_loss.item())
             if early_stopping.early_stop:
                 print("Optimization Process Have Stopped!!!")
-                print("Selected Features for AFS-BM XGB: ", XGBoost_Selector.replicate_mask)
+                print("Selected Features for AFS-BM XGB: {}".format(self.col_names[XGBoost_Selector.replicate_mask]))
+                print("Selected Features for AFS-BM XGB: {}".format(self.col_names[XGBoost_Selector.replicate_mask]))
                 # trace = go.Scatter(x=np.arange(full_loss_cache.__len__()),
                 #                    y=full_loss_cache, mode="lines")
                 # layout = go.Layout(title="Feature Selection Layer Normalized Loss", xaxis_title="Loss Index",

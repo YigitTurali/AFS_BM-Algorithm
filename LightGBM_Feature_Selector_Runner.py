@@ -42,7 +42,7 @@ def set_random_seeds(seed):
     print(f"Seeds have been set to {seed} for all random number generators.")
 
 
-set_random_seeds(444)
+set_random_seeds(222)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset_name", type=str, default="statlog_aca", help="Dataset name")
@@ -75,60 +75,49 @@ if __name__ == '__main__':
         dataset = Create_Dataloader(dataset)
         for data in tqdm(dataset):
             X_train, y_train, X_val, y_val, X_val_mask, y_val_mask, X_test, y_test = data
-            network = Feature_Selector_LGBM(params={"boosting_type": "gbdt", "importance_type": "gain",
+            network = Feature_Selector_LGBM(params={"boosting_type": "goss", "importance_type": "gain",
                                                     "verbosity": -1},
                                             param_grid={
-                                                'num_leaves': [10, 20],
+                                                'boosting_type': ['goss'],
+                                                'num_leaves': [20, 50, 100],
                                                 'learning_rate': [0.01, 0.1, 0.5],
-                                                'n_estimators': [10, 20],
+                                                'n_estimators': [20, 50, 100],
                                                 'subsample': [0.6, 0.8, 1.0],
                                                 'colsample_bytree': [0.6, 0.8, 1.0],
                                                 # 'reg_alpha': [0.0, 0.1, 0.5],
                                                 # 'reg_lambda': [0.0, 0.1, 0.5],
                                                 'min_child_samples': [5, 10],
                                             },
-                                            # param_grid={
-                                            #     'boosting_type': ['gbdt'],
-                                            #     'num_leaves': [31, 63, 127],
-                                            #     'min_data_in_leaf': [20, 40, 60],
-                                            #     'max_depth': [-1, 5, 7, 10],
-                                            #     'learning_rate': [0.01, 0.05, 0.1],
-                                            #     'n_estimators': [100, 200, 500],
-                                            #     'subsample_for_bin': [50000, 100000],
-                                            #     'min_child_samples': [10, 20, 30],
-                                            #     'reg_alpha': [0, 0.1, 1.0],
-                                            #     'reg_lambda': [0, 0.1, 1.0],
-                                            #     'colsample_bytree': [0.7, 0.8, 0.9],
-                                            #     'subsample': [0.7, 0.8, 0.9],
-                                            # },
                                             X_train=X_train, X_val=X_val,
                                             X_val_mask=X_val_mask, X_test=X_test, y_train=y_train,
                                             y_val=y_val, y_val_mask=y_val_mask, y_test=y_test,
                                             data_type="Classification", dir_name=directory_name)
 
-            fit_network = network.fit_network()
-            test_fs_lgbm_model_loss = network.Test_Network()
+            network.fit_network()
+            test_loss = network.Test_Network()
+            test_fs_lgbm_model_loss = test_loss
 
             network = Feature_Selector_XGB(params={"boosting_type": "gbdt", "importance_type": "gain",
                                                    "verbosity": 0},
                                            param_grid={
-                                               'num_leaves': [10, 20],
+                                               'boosting_type': ['gbdt'],
+                                               'num_leaves': [20, 50, 100],
                                                'learning_rate': [0.01, 0.1, 0.5],
-                                               'n_estimators': [10, 20],
+                                               'n_estimators': [20, 50, 100],
                                                'subsample': [0.6, 0.8, 1.0],
                                                'colsample_bytree': [0.6, 0.8, 1.0],
                                                # 'reg_alpha': [0.0, 0.1, 0.5],
                                                # 'reg_lambda': [0.0, 0.1, 0.5],
                                                'min_child_samples': [5, 10],
                                            },
-
                                            X_train=X_train, X_val=X_val,
                                            X_val_mask=X_val_mask, X_test=X_test, y_train=y_train,
                                            y_val=y_val, y_val_mask=y_val_mask, y_test=y_test,
                                            data_type="Classification", dir_name=directory_name)
 
             network.fit_network()
-            test_fs_xgb_model_loss = network.Test_Network()
+            test_loss = network.Test_Network()
+            test_fs_xgb_model_loss = test_loss
 
             # Baseline LGBM Model
             X_val = pd.concat([X_val, X_val_mask], axis=0)
@@ -137,9 +126,9 @@ if __name__ == '__main__':
                                                                     "verbosity": -1},
                                                             param_grid={
                                                                 'boosting_type': ['gbdt'],
-                                                                'num_leaves': [10, 20],
+                                                                'num_leaves': [5, 10],
                                                                 'learning_rate': [0.01, 0.1, 0.5],
-                                                                'n_estimators': [10, 20],
+                                                                'n_estimators': [5, 10],
                                                                 'subsample': [0.6, 0.8, 1.0],
                                                                 'colsample_bytree': [0.6, 0.8, 1.0],
                                                                 # 'reg_alpha': [0.0, 0.1, 0.5],
@@ -151,88 +140,101 @@ if __name__ == '__main__':
                                                             data_type="Classification", dir_name=directory_name)
 
             baseline_network_lgbm.Train_with_RandomSearch()
+            best_params_xgboost = baseline_network_lgbm.best_params
+            best_params_xgboost = {key: [best_params_xgboost[key]] for key in best_params_xgboost}
             test_lgbm_baseline_loss = baseline_network_lgbm.Test_Network()
+            if X_train.shape[1] == 451:
+                X_train.drop(columns=["y"], inplace=True)
 
-            baseline_network_xgboost = Baseline_XgBoost_Model(
-                params={"boosting_type": "gbdt", "importance_type": "gain",
-                        "verbosity": 0},
-                param_grid={
-                    'boosting_type': ['gbdt'],
-                    'num_leaves': [10, 20],
-                    'learning_rate': [0.01, 0.1, 0.5],
-                    'n_estimators': [5, 10, 20],
-                    'subsample': [0.6, 0.8, 1.0],
-                    'colsample_bytree': [0.6, 0.8, 1.0],
-                    # 'reg_alpha': [0.0, 0.1, 0.5],
-                    # 'reg_lambda': [0.0, 0.1, 0.5],
-                    'min_child_samples': [5, 10],
-                },
-                X_train=X_train, X_val=X_val, X_test=X_test,
-                y_train=y_train, y_val=y_val, y_test=y_test,
-                data_type="Classification", dir_name=directory_name)
+            # Baseline XGB Model
+            baseline_network_xgboost = Baseline_XgBoost_Model(params={"boosting_type": "gbdt", "importance_type": "gain",
+                                                                        "verbosity": 0},
+                                                                param_grid={
+                                                                'boosting_type': ['gbdt'],
+                                                                'num_leaves': [10, 20],
+                                                                'learning_rate': [0.01, 0.1, 0.5],
+                                                                'n_estimators': [10, 20],
+                                                                'subsample': [0.6, 0.8, 1.0],
+                                                                'colsample_bytree': [0.6, 0.8, 1.0],
+                                                                # 'reg_alpha': [0.0, 0.1, 0.5],
+                                                                # 'reg_lambda': [0.0, 0.1, 0.5],
+                                                                'min_child_samples': [5, 10],
+                                                                },
+                                                                X_train=X_train, X_val=X_val, X_test=X_test,
+                                                                y_train=y_train, y_val=y_val, y_test=y_test,
+                                                                data_type="Classification", dir_name=directory_name)
 
             baseline_network_xgboost.Train_with_RandomSearch()
             test_xgboost_baseline_loss = baseline_network_xgboost.Test_Network()
-
-            cross_corr_lgbm = Cross_Corr_LightGBM(params={"boosting_type": "gbdt", "importance_type": "gain",
-                                                                    "verbosity": -1},
-                                                            param_grid={
-                                                                'boosting_type': ['gbdt'],
-                                                                'num_leaves': [10, 20],
-                                                                'learning_rate': [0.01, 0.1, 0.5],
-                                                                'n_estimators': [10, 20],
-                                                                'subsample': [0.6, 0.8, 1.0],
-                                                                'colsample_bytree': [0.6, 0.8, 1.0],
-                                                                # 'reg_alpha': [0.0, 0.1, 0.5],
-                                                                # 'reg_lambda': [0.0, 0.1, 0.5],
-                                                                'min_child_samples': [5, 10],
-                                                            },
-                                                            X_train=X_train, X_val=X_val, X_test=X_test,
-                                                            y_train=y_train, y_val=y_val, y_test=y_test,
-                                                            data_type="Classification", dir_name=directory_name)
-
-            cross_corr_lgbm.Train_with_RandomSearch()
-            test_lgbm_cross_corr_loss = cross_corr_lgbm.Test_Network()
-
-            mutual_inf_lgbm = Mutual_Inf_LightGBM(params={"boosting_type": "gbdt", "importance_type": "gain",
-                                                                    "verbosity": -1},
-                                                            param_grid={
-                                                                'boosting_type': ['gbdt'],
-                                                                'num_leaves': [10, 20],
-                                                                'learning_rate': [0.01, 0.1, 0.5],
-                                                                'n_estimators': [10, 20],
-                                                                'subsample': [0.6, 0.8, 1.0],
-                                                                'colsample_bytree': [0.6, 0.8, 1.0],
-                                                                # 'reg_alpha': [0.0, 0.1, 0.5],
-                                                                # 'reg_lambda': [0.0, 0.1, 0.5],
-                                                                'min_child_samples': [5, 10],
-                                                            },
-                                                            X_train=X_train, X_val=X_val, X_test=X_test,
-                                                            y_train=y_train, y_val=y_val, y_test=y_test,
-                                                            data_type="Classification", dir_name=directory_name)
-
-            mutual_inf_lgbm.Train_with_RandomSearch()
-            test_lgbm_mutual_inf_loss = mutual_inf_lgbm.Test_Network()
+            if X_train.shape[1] == 451:
+                X_train.drop(columns=["y"], inplace=True)
 
             rfe_lgbm = RFE_LightGBM(params={"boosting_type": "gbdt", "importance_type": "gain",
-                                                                    "verbosity": -1},
-                                                            param_grid={
-                                                                'boosting_type': ['gbdt'],
-                                                                'num_leaves': [10, 20],
-                                                                'learning_rate': [0.01, 0.1, 0.5],
-                                                                'n_estimators': [10, 20],
-                                                                'subsample': [0.6, 0.8, 1.0],
-                                                                'colsample_bytree': [0.6, 0.8, 1.0],
-                                                                # 'reg_alpha': [0.0, 0.1, 0.5],
-                                                                # 'reg_lambda': [0.0, 0.1, 0.5],
-                                                                'min_child_samples': [5, 10],
-                                                            },
-                                                            X_train=X_train, X_val=X_val, X_test=X_test,
-                                                            y_train=y_train, y_val=y_val, y_test=y_test,
-                                                            data_type="Classification", dir_name=directory_name)
+                                            "verbosity": -1},
+                                    param_grid={
+                                        'boosting_type': ['gbdt'],
+                                        'num_leaves': [10, 20],
+                                        'learning_rate': [0.01, 0.1, 0.5],
+                                        'n_estimators': [10, 20],
+                                        'subsample': [0.6, 0.8, 1.0],
+                                        'colsample_bytree': [0.6, 0.8, 1.0],
+                                        # 'reg_alpha': [0.0, 0.1, 0.5],
+                                        # 'reg_lambda': [0.0, 0.1, 0.5],
+                                        'min_child_samples': [5, 10],
+                                    },
+                                    X_train=X_train, X_val=X_val, X_test=X_test,
+                                    y_train=y_train, y_val=y_val, y_test=y_test,
+                                    data_type="Classification", dir_name=directory_name)
 
             rfe_lgbm.Train_with_RandomSearch()
             test_lgbm_rfe_loss = rfe_lgbm.Test_Network()
+            if X_train.shape[1] == 451:
+                X_train.drop(columns=["y"], inplace=True)
+
+            rfe_xgb = RFE_XGB(params={"boosting_type": "gbdt", "importance_type": "gain",
+                                      "verbosity": 0},
+                              param_grid={
+                                  'boosting_type': ['gbdt'],
+                                  'num_leaves': [10, 20],
+                                  'learning_rate': [0.01, 0.1, 0.5],
+                                  'n_estimators': [5, 10, 20],
+                                  'subsample': [0.6, 0.8, 1.0],
+                                  'colsample_bytree': [0.6, 0.8, 1.0],
+                                  # 'reg_alpha': [0.0, 0.1, 0.5],
+                                  # 'reg_lambda': [0.0, 0.1, 0.5],
+                                  'min_child_samples': [5, 10],
+                              },
+                              X_train=X_train, X_val=X_val, X_test=X_test,
+                              y_train=y_train, y_val=y_val, y_test=y_test,
+                              data_type="Classification", dir_name=directory_name)
+
+            rfe_xgb.Train_with_RandomSearch()
+            test_xgboost_rfe_loss = rfe_xgb.Test_Network()
+            if X_train.shape[1] == 451:
+                X_train.drop(columns=["y"], inplace=True)
+
+
+            cross_corr_lgbm = Cross_Corr_LightGBM(params={"boosting_type": "gbdt", "importance_type": "gain",
+                                                          "verbosity": -1},
+                                                  param_grid={
+                                                      'boosting_type': ['gbdt'],
+                                                      'num_leaves': [10, 20],
+                                                      'learning_rate': [0.01, 0.1, 0.5],
+                                                      'n_estimators': [10, 20],
+                                                      'subsample': [0.6, 0.8, 1.0],
+                                                      'colsample_bytree': [0.6, 0.8, 1.0],
+                                                      # 'reg_alpha': [0.0, 0.1, 0.5],
+                                                      # 'reg_lambda': [0.0, 0.1, 0.5],
+                                                      'min_child_samples': [5, 10],
+                                                  },
+                                                  X_train=X_train, X_val=X_val, X_test=X_test,
+                                                  y_train=y_train, y_val=y_val, y_test=y_test,
+                                                  data_type="Classification", dir_name=directory_name)
+
+            cross_corr_lgbm.Train_with_RandomSearch()
+            test_lgbm_cross_corr_loss = cross_corr_lgbm.Test_Network()
+            if X_train.shape[1] == 451:
+                X_train.drop(columns=["y"], inplace=True)
 
             cross_corr_xgb = Cross_Corr_XGB(
                 params={"boosting_type": "gbdt", "importance_type": "gain",
@@ -254,47 +256,52 @@ if __name__ == '__main__':
 
             cross_corr_xgb.Train_with_RandomSearch()
             test_xgboost_cross_corr_loss = cross_corr_xgb.Test_Network()
+            if X_train.shape[1] == 451:
+                X_train.drop(columns=["y"], inplace=True)
+
+            mutual_inf_lgbm = Mutual_Inf_LightGBM(params={"boosting_type": "gbdt", "importance_type": "gain",
+                                                          "verbosity": -1},
+                                                  param_grid={
+                                                      'boosting_type': ['gbdt'],
+                                                      'num_leaves': [10, 20],
+                                                      'learning_rate': [0.01, 0.1, 0.5],
+                                                      'n_estimators': [10, 20],
+                                                      'subsample': [0.6, 0.8, 1.0],
+                                                      'colsample_bytree': [0.6, 0.8, 1.0],
+                                                      # 'reg_alpha': [0.0, 0.1, 0.5],
+                                                      # 'reg_lambda': [0.0, 0.1, 0.5],
+                                                      'min_child_samples': [5, 10],
+                                                  },
+                                                  X_train=X_train, X_val=X_val, X_test=X_test,
+                                                  y_train=y_train, y_val=y_val, y_test=y_test,
+                                                  data_type="Classification", dir_name=directory_name)
+
+            mutual_inf_lgbm.Train_with_RandomSearch()
+            test_lgbm_mutual_inf_loss = mutual_inf_lgbm.Test_Network()
+            if X_train.shape[1] == 451:
+                X_train.drop(columns=["y"], inplace=True)
 
             mutual_inf_xgb = Mutual_Inf_XGB(params={"boosting_type": "gbdt", "importance_type": "gain",
-                        "verbosity": 0},
-                param_grid={
-                    'boosting_type': ['gbdt'],
-                    'num_leaves': [10, 20],
-                    'learning_rate': [0.01, 0.1, 0.5],
-                    'n_estimators': [5, 10, 20],
-                    'subsample': [0.6, 0.8, 1.0],
-                    'colsample_bytree': [0.6, 0.8, 1.0],
-                    # 'reg_alpha': [0.0, 0.1, 0.5],
-                    # 'reg_lambda': [0.0, 0.1, 0.5],
-                    'min_child_samples': [5, 10],
-                },
-                X_train=X_train, X_val=X_val, X_test=X_test,
-                y_train=y_train, y_val=y_val, y_test=y_test,
-                data_type="Classification", dir_name=directory_name)
+                                                    "verbosity": 0},
+                                            param_grid={
+                                                'boosting_type': ['gbdt'],
+                                                'num_leaves': [10, 20],
+                                                'learning_rate': [0.01, 0.1, 0.5],
+                                                'n_estimators': [5, 10, 20],
+                                                'subsample': [0.6, 0.8, 1.0],
+                                                'colsample_bytree': [0.6, 0.8, 1.0],
+                                                # 'reg_alpha': [0.0, 0.1, 0.5],
+                                                # 'reg_lambda': [0.0, 0.1, 0.5],
+                                                'min_child_samples': [5, 10],
+                                            },
+                                            X_train=X_train, X_val=X_val, X_test=X_test,
+                                            y_train=y_train, y_val=y_val, y_test=y_test,
+                                            data_type="Classification", dir_name=directory_name)
 
             mutual_inf_xgb.Train_with_RandomSearch()
             test_xgboost_mutual_inf_loss = mutual_inf_xgb.Test_Network()
-            if X_train.shape[1] == 101:
+            if X_train.shape[1] == 451:
                 X_train.drop(columns=["y"], inplace=True)
-            rfe_xgb = RFE_XGB(params={"boosting_type": "gbdt", "importance_type": "gain",
-                        "verbosity": 0},
-                param_grid={
-                    'boosting_type': ['gbdt'],
-                    'num_leaves': [10, 20],
-                    'learning_rate': [0.01, 0.1, 0.5],
-                    'n_estimators': [5, 10, 20],
-                    'subsample': [0.6, 0.8, 1.0],
-                    'colsample_bytree': [0.6, 0.8, 1.0],
-                    # 'reg_alpha': [0.0, 0.1, 0.5],
-                    # 'reg_lambda': [0.0, 0.1, 0.5],
-                    'min_child_samples': [5, 10],
-                },
-                X_train=X_train, X_val=X_val, X_test=X_test,
-                y_train=y_train, y_val=y_val, y_test=y_test,
-                data_type="Classification", dir_name=directory_name)
-
-            rfe_xgb.Train_with_RandomSearch()
-            test_xgboost_rfe_loss = rfe_xgb.Test_Network()
 
 
             print("------------------------------------------------------------------")
@@ -415,7 +422,7 @@ if __name__ == '__main__':
             best_params_xgboost = baseline_network_lgbm.best_params
             best_params_xgboost = {key: [best_params_xgboost[key]] for key in best_params_xgboost}
             test_lgbm_baseline_loss.append(baseline_network_lgbm.Test_Network())
-            if X_train.shape[1] == 101:
+            if X_train.shape[1] == 177:
                 X_train.drop(columns=["y"], inplace=True)
 
             # Baseline XGB Model
@@ -439,7 +446,7 @@ if __name__ == '__main__':
 
             baseline_network_xgboost.Train_with_RandomSearch()
             test_xgboost_baseline_loss.append(baseline_network_xgboost.Test_Network())
-            if X_train.shape[1] == 101:
+            if X_train.shape[1] == 177:
                 X_train.drop(columns=["y"], inplace=True)
 
             rfe_lgbm = RFE_LightGBM(params={"boosting_type": "gbdt", "importance_type": "gain",
@@ -461,7 +468,7 @@ if __name__ == '__main__':
 
             rfe_lgbm.Train_with_RandomSearch()
             test_lgbm_rfe_loss.append(rfe_lgbm.Test_Network())
-            if X_train.shape[1] == 101:
+            if X_train.shape[1] == 177:
                 X_train.drop(columns=["y"], inplace=True)
 
             rfe_xgb = RFE_XGB(params={"boosting_type": "gbdt", "importance_type": "gain",
@@ -483,7 +490,7 @@ if __name__ == '__main__':
 
             rfe_xgb.Train_with_RandomSearch()
             test_xgboost_rfe_loss.append(rfe_xgb.Test_Network())
-            if X_train.shape[1] == 101:
+            if X_train.shape[1] == 177:
                 X_train.drop(columns=["y"], inplace=True)
 
 
@@ -506,7 +513,7 @@ if __name__ == '__main__':
 
             cross_corr_lgbm.Train_with_RandomSearch()
             test_lgbm_cross_corr_loss.append(cross_corr_lgbm.Test_Network())
-            if X_train.shape[1] == 101:
+            if X_train.shape[1] == 177:
                 X_train.drop(columns=["y"], inplace=True)
 
             cross_corr_xgb = Cross_Corr_XGB(
@@ -529,7 +536,7 @@ if __name__ == '__main__':
 
             cross_corr_xgb.Train_with_RandomSearch()
             test_xgboost_cross_corr_loss.append(cross_corr_xgb.Test_Network())
-            if X_train.shape[1] == 101:
+            if X_train.shape[1] == 177:
                 X_train.drop(columns=["y"], inplace=True)
 
             mutual_inf_lgbm = Mutual_Inf_LightGBM(params={"boosting_type": "gbdt", "importance_type": "gain",
@@ -551,7 +558,7 @@ if __name__ == '__main__':
 
             mutual_inf_lgbm.Train_with_RandomSearch()
             test_lgbm_mutual_inf_loss.append(mutual_inf_lgbm.Test_Network())
-            if X_train.shape[1] == 101:
+            if X_train.shape[1] == 177:
                 X_train.drop(columns=["y"], inplace=True)
 
             mutual_inf_xgb = Mutual_Inf_XGB(params={"boosting_type": "gbdt", "importance_type": "gain",
@@ -573,7 +580,7 @@ if __name__ == '__main__':
 
             mutual_inf_xgb.Train_with_RandomSearch()
             test_xgboost_mutual_inf_loss.append(mutual_inf_xgb.Test_Network())
-            if X_train.shape[1] == 101:
+            if X_train.shape[1] == 177:
                 X_train.drop(columns=["y"], inplace=True)
 
             print("------------------------------------------------------------------")
